@@ -33,6 +33,7 @@ class MainSeeder extends Seeder
             ['slug' => 'wallet.manage',  'name' => 'Gérer les soldes',              'description' => 'Créditer / débiter des users'],
             ['slug' => 'content.read',   'name' => 'Lire le contenu',               'description' => 'Accès aux ressources publiques'],
             ['slug' => 'content.manage', 'name' => 'Modérer le contenu',            'description' => 'Modifier / supprimer du contenu'],
+            ['slug' => 'import.csv',     'name' => 'Importer des CSV',              'description' => 'Accès outil import CSV'],
         ];
 
         foreach ($permissions as &$p) {
@@ -57,19 +58,11 @@ class MainSeeder extends Seeder
             ['id_type' => $types['admin'], 'id_permission' => $perms['wallet.manage']],
             ['id_type' => $types['admin'], 'id_permission' => $perms['content.read']],
             ['id_type' => $types['admin'], 'id_permission' => $perms['content.manage']],
+            ['id_type' => $types['admin'], 'id_permission' => $perms['import.csv']],
             // User : wallet + contenu
             ['id_type' => $types['user'], 'id_permission' => $perms['wallet.view']],
             ['id_type' => $types['user'], 'id_permission' => $perms['content.read']],
             // Moderateur : contenu + création d'utilisateurs
-            // PEDAGOGIE : 'admin.panel' est nécessaire ici car c'est le
-            // filtre appliqué à TOUT le groupe de routes /admin/* (voir
-            // AdminFilter + Routes.php). Sans lui, le modérateur ne pourrait
-            // jamais atteindre /admin/users/create, même avec 'users.create'.
-            // 'users.create' reste volontairement PLUS ÉTROITE que
-            // 'users.manage' : le modérateur peut créer des comptes "user"
-            // par défaut, mais ne peut ni les modifier, ni les désactiver,
-            // ni les supprimer (voir Admin\Dashboard::storeUser(), qui
-            // ignore le champ id_type envoyé si 'users.manage' est absent).
             ['id_type' => $types['moderator'], 'id_permission' => $perms['admin.panel']],
             ['id_type' => $types['moderator'], 'id_permission' => $perms['users.create']],
             ['id_type' => $types['moderator'], 'id_permission' => $perms['content.read']],
@@ -77,12 +70,55 @@ class MainSeeder extends Seeder
         ];
         $this->db->table('user_type_permissions')->insertBatch($pivot);
 
-        // ── 4. Utilisateurs de démonstration ────────────────────────
+        // ── 4. Mobile Money : Préfixes & Opérations ────────────────
+        $this->db->table('operator_prefixes')->insertBatch([
+            ['prefix' => '033', 'created_at' => $now, 'updated_at' => $now],
+            ['prefix' => '037', 'created_at' => $now, 'updated_at' => $now],
+            ['prefix' => '034', 'created_at' => $now, 'updated_at' => $now],
+            ['prefix' => '038', 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        $this->db->table('operation_types')->insertBatch([
+            ['name' => 'Dépôt', 'slug' => 'deposit'],
+            ['name' => 'Retrait', 'slug' => 'withdraw'],
+            ['name' => 'Transfert', 'slug' => 'transfer'],
+        ]);
+
+        $opTypes = [];
+        foreach ($this->db->table('operation_types')->get()->getResultArray() as $op) {
+            $opTypes[$op['slug']] = $op['id'];
+        }
+
+        // Barème des frais pour Retrait et Transfert
+        $feeScales = [
+            ['min_amount' => 100, 'max_amount' => 1000, 'fee_amount' => 50],
+            ['min_amount' => 1001, 'max_amount' => 5000, 'fee_amount' => 50],
+            ['min_amount' => 5001, 'max_amount' => 10000, 'fee_amount' => 100],
+            ['min_amount' => 10001, 'max_amount' => 25000, 'fee_amount' => 200],
+            ['min_amount' => 25001, 'max_amount' => 50000, 'fee_amount' => 400],
+            ['min_amount' => 50001, 'max_amount' => 100000, 'fee_amount' => 800],
+            ['min_amount' => 100001, 'max_amount' => 250000, 'fee_amount' => 1500],
+            ['min_amount' => 250001, 'max_amount' => 500000, 'fee_amount' => 1500],
+            ['min_amount' => 500001, 'max_amount' => 1000000, 'fee_amount' => 2500],
+            ['min_amount' => 1000001, 'max_amount' => 2000000, 'fee_amount' => 3000],
+        ];
+
+        $feeInserts = [];
+        foreach (['withdraw', 'transfer'] as $typeSlug) {
+            foreach ($feeScales as $scale) {
+                $scale['operation_type_id'] = $opTypes[$typeSlug];
+                $feeInserts[] = $scale;
+            }
+        }
+        $this->db->table('fee_scales')->insertBatch($feeInserts);
+
+        // ── 5. Utilisateurs de démonstration ────────────────────────
         $users = [
             [
                 'username'   => 'Admin',
                 'email'      => 'admin@example.com',
-                'password'   => password_hash('Admin@1234', PASSWORD_DEFAULT),
+                'phone'      => null,
+                'password'   => password_hash('password123', PASSWORD_DEFAULT),
                 'id_type'    => $types['admin'],
                 'is_active'  => 1,
                 'created_at' => $now,
@@ -90,32 +126,55 @@ class MainSeeder extends Seeder
             ],
             [
                 'username'   => 'Alice',
-                'email'      => 'alice@example.com',
-                'password'   => password_hash('User@1234', PASSWORD_DEFAULT),
+                'email'      => null, // Les clients utilisent uniquement le phone
+                'phone'      => '0331234567',
+                'password'   => null,
                 'id_type'    => $types['user'],
                 'is_active'  => 1,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
             [
-                'username'   => 'Bob',
-                'email'      => 'bob@example.com',
-                'password'   => password_hash('Modo@1234', PASSWORD_DEFAULT),
+                'username'   => 'Modo',
+                'email'      => 'mod@example.com',
+                'phone'      => null,
+                'password'   => password_hash('password123', PASSWORD_DEFAULT),
                 'id_type'    => $types['moderator'],
                 'is_active'  => 1,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
+            [
+                'username'   => 'Bob',
+                'email'      => null,
+                'phone'      => '0341234567',
+                'password'   => null,
+                'id_type'    => $types['user'],
+                'is_active'  => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
         ];
         $this->db->table('users')->insertBatch($users);
 
-        // ── 5. Soldes pour les users avec wallet.view ────────────────
-        $aliceId = $this->db->table('users')->where('email', 'alice@example.com')->get()->getRowArray()['id'];
-        $this->db->table('user_balances')->insert([
-            'id_user'    => $aliceId,
-            'balance'    => 150.00,
-            'currency'   => 'EUR',
-            'updated_at' => $now,
-        ]);
+        // ── 6. Soldes pour les users avec wallet.view ────────────────
+        $aliceId = $this->db->table('users')->where('phone', '0331234567')->get()->getRowArray()['id'];
+        $bobId = $this->db->table('users')->where('phone', '0341234567')->get()->getRowArray()['id'];
+        
+        $balances = [
+            [
+                'id_user'    => $aliceId,
+                'balance'    => 150000.00,
+                'currency'   => 'Ar',
+                'updated_at' => $now,
+            ],
+            [
+                'id_user'    => $bobId,
+                'balance'    => 50000.00,
+                'currency'   => 'Ar',
+                'updated_at' => $now,
+            ]
+        ];
+        $this->db->table('user_balances')->insertBatch($balances);
     }
 }
