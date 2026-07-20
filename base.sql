@@ -75,18 +75,48 @@ CREATE TABLE IF NOT EXISTS `fee_scales` (
     FOREIGN KEY (`operation_type_id`) REFERENCES `operation_types`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS `external_operators` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `nom` VARCHAR(100) NOT NULL,
+    `commission_pourcentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    `created_at` DATETIME DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS `external_operator_prefixes` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `external_operator_id` INTEGER NOT NULL,
+    `prefix` VARCHAR(5) NOT NULL,
+    FOREIGN KEY (`external_operator_id`) REFERENCES `external_operators`(`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `fee_credits` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `user_id` INTEGER NOT NULL,
+    `amount_remaining` DECIMAL(15,2) NOT NULL,
+    `source_transaction_id` INTEGER NOT NULL,
+    `created_at` DATETIME DEFAULT NULL,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS `transactions` (
     `id` INTEGER PRIMARY KEY AUTOINCREMENT,
     `user_id` INTEGER NOT NULL,
     `recipient_id` INTEGER DEFAULT NULL,
+    `external_operator_id` INTEGER DEFAULT NULL,
+    `external_phone` VARCHAR(20) DEFAULT NULL,
     `operation_type_id` INTEGER NOT NULL,
     `amount` DECIMAL(15,2) NOT NULL,
     `fee_amount` DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    `commission_amount` DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    `envoye` TINYINT(1) NOT NULL DEFAULT 0,
+    `date_envoi` DATETIME DEFAULT NULL,
     `created_at` DATETIME DEFAULT NULL,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (`recipient_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (`operation_type_id`) REFERENCES `operation_types`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (`operation_type_id`) REFERENCES `operation_types`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (`external_operator_id`) REFERENCES `external_operators`(`id`) ON DELETE SET NULL
 );
+
 
 
 -- ----------------------------------------------------------------------------
