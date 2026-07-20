@@ -11,7 +11,8 @@ class TransactionModel extends Model
     protected $returnType       = 'array';
     protected $useAutoIncrement = true;
     protected $allowedFields    = [
-        'user_id', 'recipient_id', 'operation_type_id', 'amount', 'fee_amount', 'created_at'
+        'user_id', 'recipient_id', 'operation_type_id', 'amount', 'fee_amount', 'created_at',
+        'external_operator_id', 'external_phone', 'commission_amount', 'envoye', 'date_envoi'
     ];
     
     // Les timestamps sont gérés manuellement dans le service pour s'assurer que ça matche bien (ou pas)
@@ -22,10 +23,11 @@ class TransactionModel extends Model
      */
     public function getUserHistory(int $userId): array
     {
-        return $this->select('transactions.*, op.name as op_name, r.phone as recipient_phone, u.phone as sender_phone')
+        return $this->select('transactions.*, op.name as op_name, r.phone as recipient_phone, u.phone as sender_phone, ext.nom as external_operator_name')
             ->join('operation_types op', 'op.id = transactions.operation_type_id')
             ->join('users u', 'u.id = transactions.user_id')
             ->join('users r', 'r.id = transactions.recipient_id', 'left')
+            ->join('external_operators ext', 'ext.id = transactions.external_operator_id', 'left')
             ->groupStart()
                 ->where('transactions.user_id', $userId)
                 ->orWhere('transactions.recipient_id', $userId)
@@ -59,6 +61,26 @@ class TransactionModel extends Model
             ->groupBy('operation_types.id')
             ->orderBy('operation_types.slug')
             ->findAll();
+    }
+    public function getGainsStatsV2(): array
+    {
+        // Gains internes (dépôt, retrait, transfert interne) : frais barème uniquement
+        $internal = $this->select('operation_types.name AS libelle, SUM(transactions.fee_amount) as total_frais')
+            ->join('operation_types', 'operation_types.id = transactions.operation_type_id')
+            ->where('transactions.external_operator_id', null)
+            ->groupBy('operation_types.id')
+            ->findAll();
+
+        // Gains externes : frais barème + commission, groupés PAR OPÉRATEUR EXTERNE
+        $external = $this->select('external_operators.nom,
+                SUM(transactions.fee_amount) as total_frais,
+                SUM(transactions.commission_amount) as total_commission')
+            ->join('external_operators', 'external_operators.id = transactions.external_operator_id')
+            ->where('transactions.external_operator_id !=', null)
+            ->groupBy('external_operators.id')
+            ->findAll();
+
+        return ['internal' => $internal, 'external' => $external];
     }
 }
 

@@ -90,7 +90,6 @@
 
                     <?php // On n'affiche le bouton que si la permission est présente. ?>
                     <?php if (has_permission('users.manage')): ?>
-                        <a href="<?= base_url('admin/users/' . $u['id'] . '/edit') ?>" class="btn btn--outline btn--sm">Modifier</a>
                         <a href="<?= base_url('admin/users/' . $u['id'] . '/toggle') ?>" class="btn btn--outline btn--sm">
                             <?= $u['is_active'] ? 'Désactiver' : 'Activer' ?>
                         </a>

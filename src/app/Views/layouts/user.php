@@ -32,34 +32,16 @@
                 Tableau de bord
             </a>
 
-            <?php if (has_permission('wallet.view')): ?>
-            <a href="<?= base_url('user/wallet') ?>"
-               class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/user/wallet') ? 'active' : '' ?>">
-                <?= svg_icon('wallet') ?>
-                Mon solde
-            </a>
-            <?php endif; ?>
-
             <span class="sidebar__group-label">Mobile Money</span>
             <a href="<?= base_url('user/operations/history') ?>"
                class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/user/operations/history') ? 'active' : '' ?>">
                 <?= svg_icon('grid') ?>
                 Historique &amp; Solde
             </a>
-            <a href="<?= base_url('user/operations/deposit') ?>"
-               class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/user/operations/deposit') ? 'active' : '' ?>">
+            <a href="<?= base_url('user/operations') ?>"
+               class="sidebar__link <?= current_url(true)->getPath() === '/user/operations' || str_starts_with(current_url(true)->getPath(), '/user/operations/formulaire') ? 'active' : '' ?>">
                 <?= svg_icon('wallet') ?>
-                Dépôt
-            </a>
-            <a href="<?= base_url('user/operations/withdraw') ?>"
-               class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/user/operations/withdraw') ? 'active' : '' ?>">
-                <?= svg_icon('logout') ?>
-                Retrait
-            </a>
-            <a href="<?= base_url('user/operations/transfer') ?>"
-               class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/user/operations/transfer') ? 'active' : '' ?>">
-                <?= svg_icon('x') ?>
-                Transfert
+                Effectuer une opération
             </a>
 
             <span class="sidebar__group-label">Compte</span>

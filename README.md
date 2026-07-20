@@ -1,97 +1,131 @@
-# ProjetFinalS4 — CodeIgniter 4 Starter
+# ProjetFinalS4 — Application CodeIgniter 4
 
-Ce dépôt contient le projet basé sur CodeIgniter 4. L'application intègre un système d'authentification, une gestion des rôles (Admin, User, Moderator), et une base de données avec des migrations/seeders prêts à l'emploi.
+[![PHP](https://img.shields.io/badge/PHP-%5E8.2-blue?logo=php&logoColor=white)](https://www.php.net/)
+[![CodeIgniter](https://img.shields.io/badge/CodeIgniter-4.3-orange?logo=codeigniter&logoColor=white)](https://codeigniter.com)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Dompdf](https://img.shields.io/badge/dompdf-v3.1-blue)](https://github.com/dompdf/dompdf)
+[![PhpSpreadsheet](https://img.shields.io/badge/PhpSpreadsheet-v3.5-blue)](https://github.com/PHPOffice/PhpSpreadsheet)
 
-## 🚀 Installation & Setup
+## Description
 
-1. **Cloner et préparer le dossier `src`** :
-   Le code applicatif se trouve dans le sous-dossier `src/`.
+Application web développée avec CodeIgniter 4, proposant :
+- authentification utilisateur
+- gestion de rôles (Admin, Moderator, User)
+- migration et seeders prêts à l'emploi
+- export PDF et Excel
+- organisation MVC propre et extensible
 
-   ```bash
-   cd src
-   ```
-2. **Installer les dépendances PHP** :
-   (!!! important: il faut verifier votre php.ini dans votre configuration pour qu'il suive les dépendances demandées avant de lancer `composer install`)
+## Stack technique
 
-   ```bash
-   composer install
-   ```
-3. **Configurer l'environnement** :
-   Copier le fichier template vers `.env` :
+- PHP 8.2+
+- CodeIgniter 4
+- dompdf
+- phpoffice/phpspreadsheet
+- PHPUnit
+- Composer
 
-   ```bash
-   cp env .env
-   ```
+## Prérequis
 
-   Sous Windows PowerShell :
+- PHP 8.2 ou supérieur
+- Composer
+- Extensions PHP : `intl`, `mbstring`, `dom`, `fileinfo`, `pdo`, `pdo_sqlite` ou autre pilote DB selon votre configuration
 
-   ```powershell
-   Copy-Item env .env
-   ```
+## Installation
 
-   Sous Windows CMD :
+1. Cloner le dépôt :
 
-   ```cmd
-   copy env .env
-   ```
+```bash
+git clone <votre-repo-url> ProjetFinalS4
+cd ProjetFinalS4/src
+```
 
-   **Important** : ouvrez `.env` et configurez vos accès à la base de données (`database.default.hostname`, `database.default.database`, `database.default.username`, `database.default.password`) ainsi que l'URL (`app.baseURL = 'http://localhost:8080'`).
-4. **Migrations et Seeders** :
-   Générez les tables et insérez les données par défaut (incluant les permissions, types d'utilisateurs et comptes de test).
+2. Installer les dépendances :
 
-   ```bash
-   php spark migrate
-   php spark db:seed MainSeeder
-   ```
+```bash
+composer install
+```
 
-   Sous Windows, vous pouvez aussi utiliser le wrapper :
+3. Copier et configurer l'environnement :
 
-   ```cmd
-   spark migrate
-   spark db:seed MainSeeder
-   ```
-5. **Démarrer le serveur local** :
+```bash
+cp env .env
+```
 
-   ```bash
-   php spark serve
-   ```
+Puis éditez `.env` et mettez à jour les paramètres suivants :
 
-   Sous Windows :
+- `database.default.hostname`
+- `database.default.database`
+- `database.default.username`
+- `database.default.password`
+- `app.baseURL`
 
-   ```cmd
-   spark serve
-   ```
+4. Générer la base de données et insérer les données initiales :
 
-   L'application sera accessible sur `http://localhost:8080`.
+```bash
+php spark migrate
+php spark db:seed MainSeeder
+```
 
----
+5. Lancer le serveur local :
 
-## 🔐 Comptes de test (après Seed)
+```bash
+php spark serve
+```
 
-Le seeder `MainSeeder` crée 3 comptes de test, tous avec le mot de passe **`password123`** :
+L'application est disponible sur `http://localhost:8080`.
+
+## Comptes de test
+
+Après exécution du seeder, utilisez :
 
 - **Admin** : `admin@example.com`
 - **Modérateur** : `mod@example.com`
 - **Utilisateur** : `user@example.com`
 
----
+Mot de passe commun : `password123`
 
-## 📦 Dépendances optionnelles (Import / Export)
+## Export PDF / Excel
 
-Certaines fonctionnalités d'export nécessitent des bibliothèques externes. Si vous devez travailler sur l'export Excel ou PDF, exécutez ces commandes depuis le dossier `src` :
+Les fonctionnalités d'export sont déjà listées dans `composer.json` :
+- `dompdf/dompdf` pour le PDF
+- `phpoffice/phpspreadsheet` pour Excel
+
+Si nécessaire, ajoutez ou mettez à jour ces packages avec :
 
 ```bash
-# Pour l'export Excel (ExcelService)
-composer require phpoffice/phpspreadsheet
-
-# Pour l'export PDF (PdfService)
 composer require dompdf/dompdf
+composer require phpoffice/phpspreadsheet
 ```
 
----
+## Tests
 
-## 🛠️ Organisation du travail
+Le projet inclut des dépendances PHPUnit et des utilitaires de tests.
 
-- **Fichier TODO** : Consultez le fichier [`TODO.md`](../TODO.md) à la racine pour voir l'état d'avancement, les tâches prioritaires et les bugs connus.
-- Ne commitez **jamais** le fichier `.env` ou le dossier `src/writable/`.
-- Les vues utilisent du HTML/CSS pur. Le fichier CSS principal est dans `src/public/assets/css/app.css`.
+Exécution des tests :
+
+```bash
+cd src
+composer test
+```
+
+## Structure du projet
+
+- `src/app/` : application principale
+- `src/app/Config/` : configuration de CodeIgniter
+- `src/app/Controllers/` : contrôleurs
+- `src/app/Models/` : modèles de données
+- `src/app/Views/` : vues front-end
+- `src/public/` : point d'entrée public et ressources statiques
+- `src/system/` : framework CodeIgniter
+- `src/writable/` : logs, cache et fichiers temporaires
+
+## Bonnes pratiques
+
+- Ne commentez pas `.env`
+- Ne versionnez pas `src/writable/`
+- Vérifiez les permissions de la base de données avant de lancer les migrations
+- Respectez les conventions de CodeIgniter pour les contrôleurs, modèles et vues
+
+## Licence
+
+Ce projet est distribué sous licence **MIT**.

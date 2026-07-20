@@ -111,4 +111,89 @@ class Settings extends BaseController
         $this->db->table('fee_scales')->where('id', $id)->delete();
         return redirect()->to('/admin/settings/fees')->with('success', 'Barème supprimé.');
     }
+
+    public function importFeesCsv()
+    {
+        $file = $this->request->getFile('csv_file');
+        
+        if ($file === null || ! $file->isValid() || $file->hasMoved()) {
+            return redirect()->to('/admin/settings/fees')->with('error', 'Aucun fichier CSV valide envoyé.');
+        }
+
+        if (strtolower($file->getClientExtension()) !== 'csv') {
+            return redirect()->to('/admin/settings/fees')->with('error', 'Le fichier doit être au format .csv');
+        }
+
+        $inserted = 0;
+        $skipped = 0;
+        
+        if (($handle = fopen($file->getTempName(), 'r')) !== false) {
+            // Lecture de l'en-tête (on l'ignore ou le vérifie)
+            fgetcsv($handle, 1000, ',');
+            
+            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+                if (count($data) < 4) {
+                    $skipped++;
+                    continue;
+                }
+                
+                $slug = trim($data[0]);
+                $minAmount = (float) trim($data[1]);
+                $maxAmount = (float) trim($data[2]);
+                $feeAmount = (float) trim($data[3]);
+                
+                $opType = $this->db->table('operation_types')->where('slug', $slug)->get()->getRowArray();
+                
+                if (!$opType || $minAmount >= $maxAmount || $feeAmount < 0) {
+                    $skipped++;
+                    continue;
+                }
+                
+                $this->db->table('fee_scales')->insert([
+                    'operation_type_id' => $opType['id'],
+                    'min_amount' => $minAmount,
+                    'max_amount' => $maxAmount,
+                    'fee_amount' => $feeAmount
+                ]);
+                $inserted++;
+            }
+            fclose($handle);
+        }
+
+        return redirect()->to('/admin/settings/fees')->with('success', "Import CSV terminé : $inserted ajouté(s), $skipped ignoré(s).");
+    }
+
+    public function exportFeesPdf()
+    {
+        $opTypes = $this->db->table('operation_types')
+                            ->whereIn('slug', ['withdraw', 'transfer'])
+                            ->get()->getResultArray();
+
+        $feesByType = [];
+        foreach ($opTypes as $op) {
+            $feesByType[$op['id']] = [
+                'name'  => $op['name'],
+                'slug'  => $op['slug'],
+                'scales' => $this->db->table('fee_scales')
+                                     ->where('operation_type_id', $op['id'])
+                                     ->orderBy('min_amount')
+                                     ->get()->getResultArray(),
+            ];
+        }
+
+        $pdf = new \App\Libraries\PdfService();
+        $pdfContent = $pdf->renderView(
+            'admin/pdf/fee_scales_report',
+            [
+                'feesByType' => $feesByType,
+                'generatedAt' => date('d/m/Y H:i'),
+            ],
+            'rapport_baremes.pdf'
+        );
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Disposition', 'attachment; filename="rapport_baremes.pdf"')
+            ->setBody($pdfContent);
+    }
 }

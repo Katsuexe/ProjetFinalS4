@@ -54,3 +54,28 @@ Pour evaluer le projet, voici les donnees issues du fichier `Workspace/users.csv
 
 ---
 *(Toutes les fonctionnalites ont ete implementees, testees et livrees.)*
+
+---
+
+## Livraison : Version 2 (Tag `v2`)
+
+### Cote operateur
+- [x] Configuration des operateurs externes (nom, commission en %) — table `external_operators`, CRUD Admin complet.
+- [x] Gestion des prefixes par operateur externe (un operateur peut avoir plusieurs prefixes) — table `external_operator_prefixes`.
+- [x] Vue "Situation des gains" separee en deux blocs : gains internes (depot/retrait/transfert interne) et gains externes (commissions inter-operateurs) — `admin/gains/index.php`.
+- [x] Vue "Montants a envoyer a chaque operateur" avec statut envoye/non envoye et bouton de marquage — `admin/settlement/index.php`, `SettlementController.php`.
+
+### Cote client
+- [x] Option "Inclure les frais de retrait" lors d'un transfert (case a cocher, cochee par defaut).
+- [x] Apercu dynamique (AJAX) des frais en temps reel : retrait, transfert simple, envoi groupe.
+- [x] Detection automatique de l'operateur du destinataire (interne/externe) avec affichage des commissions.
+- [x] Envoi groupe dynamique : chaque destinataire a son propre numero et son propre montant.
+- [x] Formulaire unique dynamique (depot/retrait/transfert/groupe) avec affichage conditionnel selon l'operation choisie.
+- [x] Export PDF de l'historique des operations.
+- [x] Formulaire creation utilisateur dynamique selon le type de compte (User = telephone, Admin/Modo = email+mdp).
+
+### Base de donnees
+- [x] `base.sql` mis a jour avec : `external_operators`, `external_operator_prefixes`, `fee_credits`, colonnes additionnelles sur `transactions` (external_operator_id, external_phone, commission_amount, envoye, date_envoi).
+
+---
+*(Version 2 livree et taguee v2.)*

@@ -75,18 +75,48 @@ CREATE TABLE IF NOT EXISTS `fee_scales` (
     FOREIGN KEY (`operation_type_id`) REFERENCES `operation_types`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS `external_operators` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `nom` VARCHAR(100) NOT NULL,
+    `commission_pourcentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    `created_at` DATETIME DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS `external_operator_prefixes` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `external_operator_id` INTEGER NOT NULL,
+    `prefix` VARCHAR(5) NOT NULL,
+    FOREIGN KEY (`external_operator_id`) REFERENCES `external_operators`(`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `fee_credits` (
+    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+    `user_id` INTEGER NOT NULL,
+    `amount_remaining` DECIMAL(15,2) NOT NULL,
+    `source_transaction_id` INTEGER NOT NULL,
+    `created_at` DATETIME DEFAULT NULL,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS `transactions` (
     `id` INTEGER PRIMARY KEY AUTOINCREMENT,
     `user_id` INTEGER NOT NULL,
     `recipient_id` INTEGER DEFAULT NULL,
+    `external_operator_id` INTEGER DEFAULT NULL,
+    `external_phone` VARCHAR(20) DEFAULT NULL,
     `operation_type_id` INTEGER NOT NULL,
     `amount` DECIMAL(15,2) NOT NULL,
     `fee_amount` DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    `commission_amount` DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    `envoye` TINYINT(1) NOT NULL DEFAULT 0,
+    `date_envoi` DATETIME DEFAULT NULL,
     `created_at` DATETIME DEFAULT NULL,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (`recipient_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (`operation_type_id`) REFERENCES `operation_types`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (`operation_type_id`) REFERENCES `operation_types`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (`external_operator_id`) REFERENCES `external_operators`(`id`) ON DELETE SET NULL
 );
+
 
 
 -- ----------------------------------------------------------------------------
@@ -129,9 +159,17 @@ INSERT INTO `user_balances` (`id_user`, `balance`, `currency`, `updated_at`) VAL
 INSERT INTO `operator_prefixes` (`prefix`, `created_at`, `updated_at`) VALUES
 ('032', '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
 ('033', '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
-('034', '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
-('037', '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
-('038', '2026-07-20 10:00:00', '2026-07-20 10:00:00');
+('034', '2026-07-20 10:00:00', '2026-07-20 10:00:00');
+
+-- Opérateurs externes (V2)
+INSERT INTO `external_operators` (`id`, `nom`, `commission_pourcentage`, `created_at`) VALUES
+(1, 'Orange Money', 2.00, '2026-07-20 10:00:00'),
+(2, 'Airtel Money', 2.50, '2026-07-20 10:00:00');
+
+-- Préfixes opérateurs externes (V2)
+INSERT INTO `external_operator_prefixes` (`external_operator_id`, `prefix`) VALUES
+(1, '037'),
+(2, '038');
 
 -- Types d'opérations
 INSERT INTO `operation_types` (`id`, `name`, `slug`) VALUES
