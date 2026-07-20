@@ -12,28 +12,6 @@
     <div class="alert alert--error"><?= esc(session()->getFlashdata('error')) ?></div>
 <?php endif; ?>
 
-<?php if (! empty($pending)): ?>
-    <!--
-        PEDAGOGIE : voir User\Dashboard::updateProfile() — depuis ce
-        changement, le nom d'utilisateur n'est plus modifié immédiatement.
-        Ce bandeau évite qu'un user pense que le formulaire n'a "rien fait"
-        après un submit.
-    -->
-    <div class="alert alert--info">
-        Une demande de modification est en attente de validation par un modérateur
-        (<?php $fields = array_map(static fn ($k, $v) => "{$k} → {$v}", array_keys($pending[0]['payload_decoded']), $pending[0]['payload_decoded']); ?>
-        <?= esc(implode(', ', $fields)) ?>).
-    </div>
-<?php endif; ?>
-
-<?= view('partials/_avatar_card', [
-    'user'         => $user,
-    'pendingPhoto' => $pendingPhoto,
-    'uploadUrl'    => base_url('user/profile/photo'),
-    'deleteUrl'    => base_url('user/profile/photo/delete'),
-    'exportPdfUrl' => base_url('user/profile/export-pdf'),
-]) ?>
-
 <div class="card card--form" style="max-width:480px;">
     <div class="card__header">
         <div class="form-card__icon">
@@ -44,12 +22,7 @@
             <span><?= esc(session('user_type_name') ?? 'Utilisateur') ?></span>
         </div>
     </div>
-    <!--
-        Cible User\Dashboard::updateProfile() (déjà existant dans le
-        contrôleur). On ne modifie que le username ici -- l'email est
-        volontairement en lecture seule (voir admin/profile.php pour la
-        même convention).
-    -->
+
     <form action="<?= base_url('user/profile') ?>" method="post">
         <?= csrf_field() ?>
 
@@ -68,6 +41,7 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn--primary">Enregistrer</button>
+            <a href="<?= base_url('user/password') ?>" class="btn btn--outline">Changer le mot de passe</a>
         </div>
     </form>
 </div>

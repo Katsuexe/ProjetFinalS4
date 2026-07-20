@@ -49,10 +49,7 @@
         </tbody>
     </table>
 
-    <div style="margin-top:1.5rem; display:flex; gap:.5rem;">
-        <a href="<?= base_url('admin/users/' . $user['id'] . '/export-pdf') ?>" class="btn btn--secondary btn--sm">
-            Exporter en PDF
-        </a>
+    <div style="margin-top:1.5rem; display:flex; gap:.5rem; flex-wrap:wrap;">
         <?php if (has_permission('users.manage')): ?>
             <a href="<?= base_url('admin/users/' . $user['id'] . '/edit') ?>" class="btn btn--outline btn--sm">
                 Modifier le profil

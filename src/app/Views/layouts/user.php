@@ -46,11 +46,6 @@
                 <?= svg_icon('user') ?>
                 Mon profil
             </a>
-            <a href="<?= base_url('user/password') ?>"
-               class="sidebar__link <?= (current_url(true)->getPath() === '/user/password') ? 'active' : '' ?>">
-                <?= svg_icon('lock') ?>
-                Mot de passe
-            </a>
         </nav>
 
         <div class="sidebar__footer">

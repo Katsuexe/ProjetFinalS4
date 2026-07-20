@@ -3,6 +3,7 @@
 
 <div class="page-header">
     <h2>Changer le mot de passe</h2>
+    <p><a href="<?= base_url('user/profile') ?>">&larr; Retour au profil</a></p>
 </div>
 
 <?php if (session()->getFlashdata('error')): ?>
@@ -16,27 +17,34 @@
         </div>
         <div class="form-card__header-text">
             <strong>Changer le mot de passe</strong>
-            <span>Choisissez un mot de passe d'au moins 8 caractères</span>
+            <span>Confirmez d'abord votre mot de passe actuel</span>
         </div>
     </div>
-    <!-- Cible User\Dashboard::updatePassword() (déjà existant). -->
+
     <form action="<?= base_url('user/password') ?>" method="post">
         <?= csrf_field() ?>
 
         <div class="card__body">
             <div class="form-group">
+                <label for="current_password">Mot de passe actuel</label>
+                <input type="password" id="current_password" name="current_password" required autocomplete="current-password">
+            </div>
+
+            <div class="form-group" style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid var(--border-color);">
                 <label for="password">Nouveau mot de passe</label>
-                <input type="password" id="password" name="password" minlength="8" required>
+                <input type="password" id="password" name="password" minlength="8" required autocomplete="new-password">
+                <small>Minimum 8 caractères.</small>
             </div>
 
             <div class="form-group">
-                <label for="password_confirm">Confirmer le mot de passe</label>
-                <input type="password" id="password_confirm" name="password_confirm" minlength="8" required>
+                <label for="password_confirm">Confirmer le nouveau mot de passe</label>
+                <input type="password" id="password_confirm" name="password_confirm" minlength="8" required autocomplete="new-password">
             </div>
         </div>
 
         <div class="form-actions">
             <button type="submit" class="btn btn--primary">Mettre à jour</button>
+            <a href="<?= base_url('user/profile') ?>" class="btn btn--outline">Annuler</a>
         </div>
     </form>
 </div>

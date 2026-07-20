@@ -83,6 +83,7 @@ class Dashboard extends BaseController
     public function updatePassword()
     {
         $rules = [
+            'current_password' => 'required',
             'password'         => 'required|min_length[8]',
             'password_confirm' => 'required|matches[password]',
         ];
@@ -91,10 +92,16 @@ class Dashboard extends BaseController
             return redirect()->back()->with('error', implode(' ', $this->validator->getErrors()));
         }
 
+        // Vérification du mot de passe actuel
+        $user = $this->userModel->find(session('user_id'));
+        if (! $user || ! password_verify($this->request->getPost('current_password'), $user['password'])) {
+            return redirect()->back()->with('error', 'Le mot de passe actuel est incorrect.');
+        }
+
         $this->userModel->update(session('user_id'), [
             'password' => $this->userModel->hashPassword($this->request->getPost('password')),
         ]);
 
-        return redirect()->to('/user/dashboard')->with('success', 'Mot de passe mis à jour.');
+        return redirect()->to('/user/profile')->with('success', 'Mot de passe mis à jour avec succès.');
     }
 }
