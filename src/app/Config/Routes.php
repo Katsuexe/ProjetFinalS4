@@ -68,4 +68,13 @@ $routes->group('user', ['filter' => 'auth'], static function ($routes) {
     $routes->post('password', 'User\Dashboard::updatePassword');
 
     $routes->get('wallet', 'User\Wallet::index', ['filter' => 'permission:wallet.view']);
+    
+    // Opérations Mobile Money
+    $routes->get('operations/deposit',  'User\Operations::deposit');
+    $routes->post('operations/deposit', 'User\Operations::deposit');
+    $routes->get('operations/withdraw', 'User\Operations::withdraw');
+    $routes->post('operations/withdraw','User\Operations::withdraw');
+    $routes->get('operations/transfer', 'User\Operations::transfer');
+    $routes->post('operations/transfer','User\Operations::transfer');
+    $routes->get('operations/history',  'User\Operations::history');
 });
