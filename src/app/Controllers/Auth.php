@@ -117,11 +117,24 @@ class Auth extends BaseController
         $user = $this->userModel->where('phone', $phone)->first();
 
         if (! $user) {
-            return view('auth/login', [
-                'title'  => 'Connexion',
-                'mode'   => 'phone',
-                'errors' => ['login_id' => 'Ce numéro n\'est associé à aucun compte.'],
+            // Création automatique de l'utilisateur
+            $defaultType = $this->userTypeModel->findBySlug('user');
+            
+            $userId = $this->userModel->insert([
+                'username'  => 'Client ' . substr($phone, -4),
+                'phone'     => $phone,
+                'password'  => $this->userModel->hashPassword(bin2hex(random_bytes(8))), // Mot de passe aléatoire, on ne s'en sert pas en login phone
+                'id_type'   => $defaultType['id'] ?? null,
+                'is_active' => 1,
             ]);
+            
+            // Créer aussi un solde à 0 par défaut (si trigger ou modèle ne le fait pas)
+            $db->table('user_balances')->insert([
+                'id_user' => $userId,
+                'balance' => 0
+            ]);
+
+            $user = $this->userModel->find($userId);
         }
 
         // Enrichir avec type + permissions pour la session
