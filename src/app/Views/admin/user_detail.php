@@ -57,15 +57,6 @@
             <a href="<?= base_url('admin/users/' . $user['id'] . '/toggle') ?>" class="btn btn--outline btn--sm">
                 <?= $user['is_active'] ? 'Désactiver' : 'Activer' ?>
             </a>
-        <?php elseif (has_permission('users.create')): ?>
-            <!-- PEDAGOGIE : un modérateur (users.create sans users.manage) ne
-                 peut pas éditer directement — mais avant ce correctif, il
-                 n'avait AUCUN moyen d'atteindre /admin/users/{id}/request-edit
-                 depuis l'interface (route déjà fonctionnelle, juste jamais
-                 liée). Voir Admin\Dashboard::requestEditUser(). -->
-            <a href="<?= base_url('admin/users/' . $user['id'] . '/request-edit') ?>" class="btn btn--outline btn--sm">
-                Modifier le profil
-            </a>
         <?php endif; ?>
         <?php if (has_permission('users.delete')): ?>
             <a href="<?= base_url('admin/users/' . $user['id'] . '/delete') ?>"

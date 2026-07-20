@@ -94,11 +94,6 @@
                         <a href="<?= base_url('admin/users/' . $u['id'] . '/toggle') ?>" class="btn btn--outline btn--sm">
                             <?= $u['is_active'] ? 'Désactiver' : 'Activer' ?>
                         </a>
-                    <?php elseif (has_permission('users.create')): ?>
-                        <?php // Le modérateur n'a pas 'users.manage' : il ne peut pas éditer
-                              // directement, il peut seulement SOUMETTRE une demande — voir
-                              // Admin\Dashboard::requestEditUser() et GUIDE_PEDAGOGIQUE.md. ?>
-                        <a href="<?= base_url('admin/users/' . $u['id'] . '/request-edit') ?>" class="btn btn--outline btn--sm">Demander modification</a>
                     <?php endif; ?>
 
                     <?php if (has_permission('users.delete')): ?>
