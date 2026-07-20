@@ -111,7 +111,7 @@
 <!-- ── Gains de l'opérateur ────────────────────────────────────────── -->
 <div class="card" style="margin-top:1.5rem;">
     <div class="card__header">
-        <span class="card__title">💰 Gains de l'opérateur</span>
+        <span class="card__title">Gains de l'opérateur</span>
         <span class="badge badge--green">Total frais : <?= number_format($total_fees ?? 0, 2, ',', ' ') ?> Ar</span>
     </div>
     <?php if (empty($gains)): ?>
@@ -143,7 +143,7 @@
 <!-- ── Situation des comptes clients ────────────────────────────────── -->
 <div class="card" style="margin-top:1.5rem;">
     <div class="card__header">
-        <span class="card__title">📱 Comptes clients Mobile Money</span>
+        <span class="card__title">Comptes clients Mobile Money</span>
         <a href="<?= base_url('admin/users') ?>" class="btn btn--outline btn--sm">Gérer</a>
     </div>
     <?php if (empty($client_accounts)): ?>
