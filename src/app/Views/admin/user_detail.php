@@ -60,8 +60,7 @@
         <?php endif; ?>
         <?php if (has_permission('users.delete')): ?>
             <a href="<?= base_url('admin/users/' . $user['id'] . '/delete') ?>"
-               class="btn btn--outline btn--sm"
-               style="color:var(--danger-color);border-color:var(--danger-color);"
+               class="btn btn--danger btn--sm"
                onclick="return confirm('Supprimer définitivement cet utilisateur ?');">
                 Supprimer
             </a>

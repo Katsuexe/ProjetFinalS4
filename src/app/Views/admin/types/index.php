@@ -41,8 +41,7 @@
               // le bouton pour ces slugs, en plus de la protection serveur. ?>
         <?php if (! in_array($type['slug'], ['admin', 'user', 'moderator'], true)): ?>
             <a href="<?= base_url('admin/types/' . $type['id'] . '/delete') ?>"
-               class="btn btn--outline btn--sm"
-               style="color:var(--danger-color);border-color:var(--danger-color);"
+               class="btn btn--danger btn--sm"
                onclick="return confirm('Supprimer ce type ?');">
                 Supprimer
             </a>

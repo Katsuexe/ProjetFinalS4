@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 
 <div class="page-header">
-    <h2>Bonjour, <?= esc(session('username')) ?> 👋</h2>
+    <h2>Bonjour, <?= esc(session('username')) ?></h2>
     <p>Bienvenue sur votre espace Mobile Money.</p>
 </div>
 
@@ -114,7 +114,7 @@
 <?php else: ?>
 <div class="card">
     <div style="padding:2.5rem;text-align:center;color:var(--text-muted);">
-        <div style="font-size:2.5rem;margin-bottom:.75rem;">📋</div>
+        <div style="font-size:2.5rem;margin-bottom:.75rem;"></div>
         <p>Aucune opération pour l'instant.<br>
         <a href="<?= base_url('user/operations/deposit') ?>">Faites votre premier dépôt →</a></p>
     </div>
