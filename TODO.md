@@ -1,97 +1,107 @@
-# Revue complète et Tâches restantes — ProjetFinalS4
+# TODO — Revue complète du projet ProjetFinalS4
 
 > **Branche** : `dev`
-
-Ce document liste l'état de la codebase, les bugs restants à corriger et les fonctionnalités à finaliser. Utilisez ce document comme point d'entrée pour savoir où travailler.
-
----
-
-## 📋 Actions prioritaires
-
-| Priorité | Action | Fichier(s) |
-|----------|--------|-----------|
-| 🔴 Haute | **Devise** : passer `'EUR'` → `'Ar'` (Ariary) | `Seeds/MainSeeder.php`, `Controllers/User/Wallet.php` |
-| 🔴 Haute | Corriger la clé de session `import_report` → `last_import_report` | `Views/admin/import/index.php` |
-| 🔴 Haute | Ajouter permission `import.csv` dans le seeder | `Seeds/MainSeeder.php` |
-| 🟡 Moyenne | `composer install` + tester Export Excel et PDF en local | `ExcelService`, `PdfService` |
-| 🟢 Basse | Câbler `AvatarService` sur les formulaires de profil | `AvatarService`, vues profil |
-| 🟢 Basse | Câbler wallet admin (crédit/débit) en Ariary | Nouveau contrôleur + vue |
-| 🟢 Basse | Tests PHPUnit pour `CsvImportService` | `tests/` |
+> Ce document liste tout ce qui manque ou doit être corrigé pour livrer la Version 1 (v1) du sujet. Il ne décrit pas ce qui a été fait (voir `Taches.md` pour ça) — uniquement ce qui reste.
 
 ---
 
-## 💱 1. Unité monétaire : Ariary (Ar / MGA)
+## 🔴 1. Fonctionnalités métier — non démarrées
 
-> L'application utilise l'**Ariary malgache** comme devise, pas l'Euro.
+Le sujet demande un système de simulation d'opérateur mobile money. Actuellement, le code livré est une base technique générique (auth, permissions, import CSV, solde en lecture seule) : **aucune des fonctionnalités métier de la v1 n'est implémentée.**
 
-### Fichiers à corriger :
+### Côté opérateur
+- [ ] Configuration des préfixes opérateur (ex : 033, 037) — pas de table, pas de CRUD, pas de vue
+- [ ] Types d'opérations (dépôt, retrait, transfert) avec barème de frais par tranche de montant, modifiable — aucune table `operation_types` / `fee_tiers`
+- [ ] Vue "situation des gains" (via les différents frais : retrait et transfert)
+- [ ] Vue "situation des comptes clients"
 
+### Côté client
+- [ ] Login automatique avec le numéro de téléphone (pas d'inscription préalable) — le système actuel n'a que login/mot de passe classique (`Auth.php`), incompatible avec ce flux
+- [x] Voir le solde — existe, mais en lecture seule (`Controllers/User/Wallet.php::index()`)
+- [ ] Faire un dépôt (supposé automatique)
+- [ ] Faire un retrait (supposé automatique)
+- [ ] Faire un transfert
+- [ ] Voir les historiques d'opérations
+
+### Base de données
+- [ ] `base.sql` à la racine du projet (scripts de création tables/vues/données) — **absent, obligatoire pour la livraison**
+- [ ] Migration `operators` (préfixes)
+- [ ] Migration `operation_types` (dépôt/retrait/transfert)
+- [ ] Migration `fee_tiers` (barèmes par tranche de montant)
+- [ ] Migration `transactions` (historique des opérations, lien client/opérateur/type/montant/frais)
+- [ ] Seeder pour peupler préfixes + barèmes de frais par défaut (voir barème donné dans le sujet)
+
+### Livraison
+- [ ] Tag Git `v1` sur le dépôt public (Github/Gitlab) — dernier commit non taggé actuellement
+- [ ] Vérifier que le dépôt est bien public
+- [ ] Renseigner les informations de début de projet dans le formulaire fourni (`https://forms.gle/nCv6xJYHVvVJj2FKA`)
+
+---
+
+## 🟠 2. Bugs confirmés dans le code existant
+
+### Devise EUR → Ar (Ariary)
+Le sujet utilise l'Ariary malgache, le code utilise encore `'EUR'` par défaut.
 | Fichier | Ligne | Valeur actuelle | Valeur attendue |
-|---------|-------|----------------|-----------------|
+|---|---|---|---|
 | `Seeds/MainSeeder.php` | ~118 | `'currency' => 'EUR'` | `'currency' => 'Ar'` |
 | `Controllers/User/Wallet.php` | ~46 | `$row['currency'] ?? 'EUR'` | `$row['currency'] ?? 'Ar'` |
 
-> **Note** : la colonne `currency` est déjà dans la table `user_balances` — pas besoin de migration.
-> Il suffit de mettre à jour le seeder et le fallback du contrôleur, puis de re-seeder.
-
+La colonne `currency` existe déjà dans `user_balances`, pas de migration nécessaire — corriger le seeder et le fallback puis re-seeder :
 ```bash
-# Après correction, re-seeder :
 php spark db:seed MainSeeder
 ```
 
----
-
-## 🐛 2. Bugs confirmés à corriger
-
-### ❌ Clé de session incohérente — import.php vs ImportController
-
-Dans [`Views/admin/import/index.php`](file:///run/media/katsu/SD/repo/ProjetFinalS4/src/app/Views/admin/import/index.php) ligne 64 :
+### Clé de session incohérente — import CSV
+`Views/admin/import/index.php` ligne 64 :
 ```php
 if ($report = session('import_report'))
 ```
-Dans [`Controllers/Admin/ImportController.php`](file:///run/media/katsu/SD/repo/ProjetFinalS4/src/app/Controllers/Admin/ImportController.php) ligne 92 :
+`Controllers/Admin/ImportController.php` ligne 92 :
 ```php
 session()->set('last_import_report', $report);
 ```
-**→ La clé `'import_report'` ≠ `'last_import_report'`** : le rapport ne s'affichera jamais.
+Les deux clés diffèrent (`import_report` vs `last_import_report`) → le rapport d'import ne s'affiche jamais.
+**Fix** : dans la vue, utiliser `session('last_import_report')`.
 
-**Fix** : dans la vue, changer en `session('last_import_report')`.
-
----
-
-### ❌ Permission `import.csv` absente du seeder
-
-Le lien "Import CSV" dans la sidebar admin est conditionné à `has_permission('import.csv')` mais cette permission **n'est pas dans `MainSeeder.php`**.  
-L'admin ne verra donc jamais ce lien sans re-seeder.
-
-**Fix** : ajouter dans `MainSeeder::$permissions` :
+### Permission `import.csv` absente du seeder
+Le lien "Import CSV" de la sidebar admin est conditionné à `has_permission('import.csv')`, mais cette permission n'existe pas dans `MainSeeder::$permissions`. L'admin ne voit donc jamais ce lien.
+**Fix** — ajouter dans `$permissions` :
 ```php
 ['slug' => 'import.csv', 'name' => 'Importer des CSV', 'description' => 'Accès outil import CSV'],
 ```
-Et dans `$pivot` :
+et dans `$pivot` :
 ```php
 ['id_type' => $types['admin'], 'id_permission' => $perms['import.csv']],
 ```
 
 ---
 
-## 🏗️ 3. Services en réserve (à câbler)
+## 🟡 3. Services prêts mais non câblés / non testés
 
-| Fichier | Statut | Note |
-|---------|--------|------|
-| `Services/AvatarService.php` | 🚧 | Prêt — store(), delete(), urlFor(). Non câblé aux formulaires de profil |
-| `Services/ExcelService.php` | 🚧 | Prêt — nécessite `composer require phpoffice/phpspreadsheet` |
-| `Libraries/PdfService.php` | 🚧 | Prêt — nécessite `composer require dompdf/dompdf` |
+| Fichier | Statut | Action requise |
+|---|---|---|
+| `Services/ExcelService.php` | 🚧 Prêt | `composer require phpoffice/phpspreadsheet` puis tester l'export en local |
+| `Libraries/PdfService.php` | 🚧 Prêt | `composer require dompdf/dompdf` puis tester l'export en local |
+| `Services/AvatarService.php` | 🚧 Prêt (store/delete/urlFor) | Non branché aux formulaires de profil — à intégrer |
+| Wallet admin (crédit/débit) | ❌ Non fait | Aucun contrôleur/vue permettant à l'admin de créditer/débiter un compte en Ariary — nécessaire avant de simuler dépôts/retraits |
+| `CsvImportService` | ❌ Non testé | Aucun test PHPUnit dans `tests/` |
 
 ---
 
-## ✅ État du projet (Ne pas toucher)
+## 🟢 4. Points à vérifier / non urgents
 
-Ces parties ont été validées et nettoyées, elles fonctionnent correctement :
+- [ ] `composer install` complet + test de bout en bout en local (Excel + PDF inclus)
+- [ ] Vérifier la responsivité mobile sur les futures vues opérateur/client (dépôt, retrait, transfert, historique)
+- [ ] Revalider les permissions (`wallet.manage`, futur `operations.manage`, etc.) une fois les nouvelles fonctionnalités ajoutées
 
-- **Profil et Mot de passe** : Workflow nettoyé, changement de MDP sécurisé.
-- **Vues Orphelines** : Les vues inutilisées (`request_edit.php`) ont été supprimées.
-- **Layouts et CSS** : Responsive mobile (`app.css`) opérationnel, menus burgers ajoutés.
-- **Authentification** : `Auth.php` et les filtres associés.
-- **Base de données** : Migrations stables, `UserModel`, `UserTypeModel`, `PermissionModel`.
-- **Infrastructure** : Fichiers `app/Config/` (Database, Routes, Filters, Security).
+---
+
+## ✅ Ce qui est stable et validé (ne pas toucher)
+
+- **Authentification** générique : `Auth.php` et filtres associés (à noter : incompatible avec le login par téléphone demandé pour les clients — à traiter séparément, pas à modifier ici)
+- **Base de données infrastructure** : migrations `user_types`, `permissions`, `users`, `user_type_permissions`, `user_balances` ; modèles associés
+- **Profil et mot de passe** : workflow nettoyé, changement de mot de passe sécurisé
+- **Layouts et CSS** : responsive mobile (`app.css`), menus burger
+- **Vues orphelines** : supprimées (`request_edit.php`)
+- **Config** : `app/Config/` (Database, Routes, Filters, Security)
