@@ -24,25 +24,25 @@
         </div>
     <?php endif; ?>
 
-    <!-- Email -->
+    <!-- Identifiant (Email ou Téléphone) -->
     <div class="form__div">
         <input
-            type="email"
-            id="email"
-            name="email"
-            class="form__input <?= isset($errors['email']) ? 'is-invalid' : '' ?>"
+            type="text"
+            id="login_id"
+            name="login_id"
+            class="form__input <?= isset($errors['login_id']) ? 'is-invalid' : '' ?>"
             placeholder=" "
-            value="<?= old('email') ?>"
-            autocomplete="email"
+            value="<?= old('login_id') ?>"
+            autocomplete="username"
             required
         >
-        <label for="email" class="form__label">Adresse email</label>
-        <?php if (isset($errors['email'])): ?>
-            <span class="form__error"><?= esc($errors['email']) ?></span>
+        <label for="login_id" class="form__label">Numéro de téléphone ou Email admin</label>
+        <?php if (isset($errors['login_id'])): ?>
+            <span class="form__error"><?= esc($errors['login_id']) ?></span>
         <?php endif; ?>
     </div>
 
-    <!-- Mot de passe -->
+    <!-- Mot de passe (Uniquement pour Admin/Email) -->
     <div class="form__div">
         <input
             type="password"
@@ -51,9 +51,8 @@
             class="form__input <?= isset($errors['password']) ? 'is-invalid' : '' ?>"
             placeholder=" "
             autocomplete="current-password"
-            required
         >
-        <label for="password" class="form__label">Mot de passe</label>
+        <label for="password" class="form__label">Mot de passe (Laisser vide si Téléphone)</label>
         <?php if (isset($errors['password'])): ?>
             <span class="form__error"><?= esc($errors['password']) ?></span>
         <?php endif; ?>

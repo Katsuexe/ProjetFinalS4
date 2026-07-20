@@ -27,8 +27,17 @@ class Auth extends BaseController
     // ─── POST /login ────────────────────────────────────────────────────────
     public function loginProcess()
     {
+        $loginId = $this->request->getPost('login_id');
+        $password = $this->request->getPost('password');
+
+        // Détection si c'est un numéro de téléphone (seulement des chiffres, ex: 0331234567)
+        if (preg_match('/^[0-9]{10}$/', $loginId)) {
+            return $this->handlePhoneLogin($loginId);
+        }
+
+        // Sinon, c'est une connexion par email classique (Admin/Modo)
         $rules = [
-            'email'    => 'required|valid_email',
+            'login_id' => 'required|valid_email',
             'password' => 'required|min_length[6]',
         ];
 
@@ -39,34 +48,97 @@ class Auth extends BaseController
             ]);
         }
 
-        $user = $this->userModel->authenticate(
-            $this->request->getPost('email'),
-            $this->request->getPost('password')
-        );
+        $user = $this->userModel->authenticate($loginId, $password);
 
         if (! $user) {
             return view('auth/login', [
                 'title'  => 'Connexion',
-                'errors' => ['email' => 'Email ou mot de passe incorrect.'],
+                'errors' => ['login_id' => 'Email ou mot de passe incorrect.'],
             ]);
         }
 
-        session()->set([
-            'isLoggedIn'     => true,
-            'user_id'        => $user['id'],
-            'username'       => $user['username'],
-            'email'          => $user['email'],
-            'id_type'        => $user['id_type'],
-            'type_slug'      => $user['type_slug'],
-            'user_type_name' => $user['type_name'],
-            'permissions'    => $user['permissions'],
-        ]);
+        $this->startSession($user);
 
         if (in_array('admin.panel', $user['permissions'], true)) {
             return redirect()->to('/admin/dashboard');
         }
 
         return redirect()->to('/user/dashboard');
+    }
+
+    private function handlePhoneLogin(string $phone)
+    {
+        // 1. Vérifier si le préfixe est valide
+        $prefix = substr($phone, 0, 3);
+        $db = \Config\Database::connect();
+        $validPrefix = $db->table('operator_prefixes')->where('prefix', $prefix)->get()->getRow();
+
+        if (! $validPrefix) {
+            return view('auth/login', [
+                'title'  => 'Connexion',
+                'errors' => ['login_id' => 'Le préfixe du numéro de téléphone n\'est pas supporté (ex: 033, 034).'],
+            ]);
+        }
+
+        // 2. Trouver l'utilisateur ou le créer
+        $user = $this->userModel->where('phone', $phone)->first();
+
+        if (! $user) {
+            $defaultType = $this->userTypeModel->findBySlug('user');
+            
+            // Création de l'utilisateur
+            $userId = $this->userModel->insert([
+                'username'  => 'Client ' . $phone,
+                'phone'     => $phone,
+                'id_type'   => $defaultType['id'] ?? null,
+                'is_active' => 1,
+            ]);
+            
+            // Création de la balance (0 Ar par défaut)
+            $db->table('user_balances')->insert([
+                'id_user'    => $userId,
+                'balance'    => 0,
+                'currency'   => 'Ar',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            // Recharger l'utilisateur (pour withType et autres join si on utilisait find)
+            $user = $this->userModel->find($userId);
+        }
+
+        // 3. Charger manuellement les relations nécessaires pour la session (comme authenticate)
+        $userType = $this->userTypeModel->find($user['id_type']);
+        $perms = $db->table('user_type_permissions')
+            ->select('permissions.slug')
+            ->join('permissions', 'permissions.id = user_type_permissions.id_permission')
+            ->where('id_type', $user['id_type'])
+            ->get()->getResultArray();
+            
+        $user['type_slug'] = $userType['slug'] ?? '';
+        $user['type_name'] = $userType['name'] ?? '';
+        $user['permissions'] = array_column($perms, 'slug');
+
+        $this->startSession($user);
+
+        return redirect()->to('/user/dashboard');
+    }
+
+    private function startSession(array $user)
+    {
+        session()->set([
+            'isLoggedIn'     => true,
+            'user_id'        => $user['id'],
+            'username'       => $user['username'],
+            'email'          => $user['email'] ?? null,
+            'phone'          => $user['phone'] ?? null,
+            'id_type'        => $user['id_type'],
+            'type_slug'      => $user['type_slug'],
+            'user_type_name' => $user['type_name'],
+            'permissions'    => $user['permissions'],
+        ]);
+        
+        // Update last login
+        $this->userModel->update($user['id'], ['last_login' => date('Y-m-d H:i:s')]);
     }
 
     // ─── GET /register ──────────────────────────────────────────────────────
