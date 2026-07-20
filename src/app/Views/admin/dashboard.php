@@ -108,4 +108,85 @@
     </table>
 </div>
 
+<!-- ── Gains de l'opérateur ────────────────────────────────────────── -->
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card__header">
+        <span class="card__title">💰 Gains de l'opérateur</span>
+        <span class="badge badge--green">Total frais : <?= number_format($total_fees ?? 0, 2, ',', ' ') ?> Ar</span>
+    </div>
+    <?php if (empty($gains)): ?>
+        <div style="padding:2rem;text-align:center;color:var(--text-muted);">Aucune transaction enregistrée.</div>
+    <?php else: ?>
+    <table>
+        <thead>
+            <tr>
+                <th>Type d'opération</th>
+                <th>Nb transactions</th>
+                <th>Volume total (Ar)</th>
+                <th>Frais collectés (Ar)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($gains as $g): ?>
+            <tr>
+                <td><span class="badge badge--blue"><?= esc($g['op_name']) ?></span></td>
+                <td><?= esc($g['nb_tx']) ?></td>
+                <td><?= number_format($g['total_amount'], 2, ',', ' ') ?></td>
+                <td style="font-weight:700;color:var(--success);"><?= number_format($g['total_fees'], 2, ',', ' ') ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+</div>
+
+<!-- ── Situation des comptes clients ────────────────────────────────── -->
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card__header">
+        <span class="card__title">📱 Comptes clients Mobile Money</span>
+        <a href="<?= base_url('admin/users') ?>" class="btn btn--outline btn--sm">Gérer</a>
+    </div>
+    <?php if (empty($client_accounts)): ?>
+        <div style="padding:2rem;text-align:center;color:var(--text-muted);">Aucun client enregistré.</div>
+    <?php else: ?>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nom</th>
+                    <th>Téléphone</th>
+                    <th>Solde (Ar)</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($client_accounts as $c): ?>
+                <tr>
+                    <td><?= esc($c['id']) ?></td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:.5rem;">
+                            <div style="width:28px;height:28px;border-radius:50%;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;flex-shrink:0;">
+                                <?= strtoupper(substr($c['username'], 0, 1)) ?>
+                            </div>
+                            <?= esc($c['username']) ?>
+                        </div>
+                    </td>
+                    <td><code><?= esc($c['phone'] ?? '—') ?></code></td>
+                    <td style="font-weight:700;"><?= number_format($c['balance'], 2, ',', ' ') ?> <?= esc($c['currency'] ?? 'Ar') ?></td>
+                    <td>
+                        <?php if ($c['is_active']): ?>
+                            <span class="badge badge--green">Actif</span>
+                        <?php else: ?>
+                            <span class="badge badge--red">Inactif</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+</div>
+
 <?= $this->endSection() ?>

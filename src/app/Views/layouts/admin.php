@@ -58,6 +58,20 @@
             </a>
             <?php endif; ?>
 
+            <?php if (has_permission('types.manage')): ?>
+            <span class="sidebar__group-label">Mobile Money</span>
+            <a href="<?= base_url('admin/settings/prefixes') ?>"
+               class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/admin/settings/prefixes') ? 'active' : '' ?>">
+                <?= svg_icon('shield') ?>
+                Préfixes opérateur
+            </a>
+            <a href="<?= base_url('admin/settings/fees') ?>"
+               class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/admin/settings/fees') ? 'active' : '' ?>">
+                <?= svg_icon('wallet') ?>
+                Barèmes de frais
+            </a>
+            <?php endif; ?>
+
             <span class="sidebar__group-label">Compte</span>
             <a href="<?= base_url('admin/profile') ?>"
                class="sidebar__link <?= (current_url(true)->getPath() === '/admin/profile') ? 'active' : '' ?>">

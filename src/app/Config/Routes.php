@@ -56,6 +56,14 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->get('import/export-excel',   'Admin\ImportController::exportUsersExcel');
     $routes->post('import/import-excel',  'Admin\ImportController::importExcel');
     $routes->get('import/export-pdf',     'Admin\ImportController::exportReportPdf');
+
+    // ── Settings : préfixes opérateur + barèmes ─────────────────
+    $routes->get('settings/prefixes',              'Admin\Settings::prefixes',     ['filter' => 'permission:types.manage']);
+    $routes->post('settings/prefixes',             'Admin\Settings::storePrefix',  ['filter' => 'permission:types.manage']);
+    $routes->get('settings/prefixes/(:num)/delete','Admin\Settings::deletePrefix/$1', ['filter' => 'permission:types.manage']);
+    $routes->get('settings/fees',                  'Admin\Settings::fees',         ['filter' => 'permission:types.manage']);
+    $routes->post('settings/fees',                 'Admin\Settings::storeFee',     ['filter' => 'permission:types.manage']);
+    $routes->get('settings/fees/(:num)/delete',    'Admin\Settings::deleteFee/$1', ['filter' => 'permission:types.manage']);
 });
 
 // ── User (filtre auth: doit être connecté) ──────────────────────
