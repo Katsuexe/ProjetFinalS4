@@ -35,6 +35,12 @@
 .DS_Store
 Thumbs.db
 
+# CodeIgniter system core (géré par Composer)
+/src/system/
+
+# Archives temporaires
+*.zip
+
 # Workspace / Temporary files
 /Workspace/
 /WorkSpace/
