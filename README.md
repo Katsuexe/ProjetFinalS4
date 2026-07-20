@@ -11,7 +11,7 @@ Ce dépôt contient le projet basé sur CodeIgniter 4. L'application intègre un
    cd src
    ```
 2. **Installer les dépendances PHP** :
-   (!!! important: il faut veriifer votre php.ini dans votre configuration pour qu'il suive les dépendances demandées avant de lancer `composer install`)
+   (!!! important: il faut verifier votre php.ini dans votre configuration pour qu'il suive les dépendances demandées avant de lancer `composer install`)
 
    ```bash
    composer install
@@ -23,7 +23,19 @@ Ce dépôt contient le projet basé sur CodeIgniter 4. L'application intègre un
    cp env .env
    ```
 
-   **Important** : Ouvrez `.env` et configurez vos accès à la base de données (`database.default.hostname`, `database.default.database`, `database.default.username`, `database.default.password`) ainsi que l'URL (`app.baseURL = 'http://localhost:8080'`).
+   Sous Windows PowerShell :
+
+   ```powershell
+   Copy-Item env .env
+   ```
+
+   Sous Windows CMD :
+
+   ```cmd
+   copy env .env
+   ```
+
+   **Important** : ouvrez `.env` et configurez vos accès à la base de données (`database.default.hostname`, `database.default.database`, `database.default.username`, `database.default.password`) ainsi que l'URL (`app.baseURL = 'http://localhost:8080'`).
 4. **Migrations et Seeders** :
    Générez les tables et insérez les données par défaut (incluant les permissions, types d'utilisateurs et comptes de test).
 
@@ -31,10 +43,23 @@ Ce dépôt contient le projet basé sur CodeIgniter 4. L'application intègre un
    php spark migrate
    php spark db:seed MainSeeder
    ```
+
+   Sous Windows, vous pouvez aussi utiliser le wrapper :
+
+   ```cmd
+   spark migrate
+   spark db:seed MainSeeder
+   ```
 5. **Démarrer le serveur local** :
 
    ```bash
    php spark serve
+   ```
+
+   Sous Windows :
+
+   ```cmd
+   spark serve
    ```
 
    L'application sera accessible sur `http://localhost:8080`.
