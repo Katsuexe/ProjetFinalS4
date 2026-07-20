@@ -252,22 +252,23 @@ class MobileMoneyService
     }
 
     /**
-     * Décision 5A : une transaction par destinataire, split égal, frais calculé par ligne.
+     * Envoi groupé dynamique : Chaque destinataire a son propre montant.
+     * $recipientsData : array of ['phone' => '...', 'amount' => float]
      */
-    public function transferMultiple(string $senderPhone, array $recipientPhones, float $totalAmount, bool $includeWithdrawFee = true): array
+    public function transferMultiple(string $senderPhone, array $recipientsData, bool $includeWithdrawFee = true): array
     {
-        $n = count($recipientPhones);
-        if ($n === 0) {
+        if (empty($recipientsData)) {
             throw new \RuntimeException("Aucun destinataire sélectionné.");
         }
-
-        $amountPerRecipient = round($totalAmount / $n, 2); // split égal
 
         $this->db->transStart(); // tout ou rien
 
         $results = [];
-        foreach ($recipientPhones as $phone) {
-            $results[] = $this->transfer($senderPhone, $phone, $amountPerRecipient, $includeWithdrawFee);
+        foreach ($recipientsData as $data) {
+            if (empty($data['phone']) || empty($data['amount'])) continue;
+            
+            // On réutilise la logique de transfert classique pour chaque ligne
+            $results[] = $this->transfer($senderPhone, $data['phone'], (float) $data['amount'], $includeWithdrawFee);
         }
 
         $this->db->transComplete();

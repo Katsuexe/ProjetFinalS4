@@ -6,6 +6,9 @@ use App\Controllers\BaseController;
 use App\Services\MobileMoneyService;
 use App\Models\TransactionModel;
 use App\Models\UserBalanceModel;
+use App\Models\ExternalOperatorModel;
+use App\Services\FeeCalculatorService;
+use App\Libraries\PdfService;
 
 class Operations extends BaseController
 {
@@ -36,70 +39,187 @@ class Operations extends BaseController
         helper(['form', 'url']);
     }
 
-    // ─── DEPOT ──────────────────────────────────────────────────────────────
-    public function deposit()
+    // ─── AFFICHAGE DYNAMIQUE (VUE UNIQUE) ───────────────────────────────────
+    public function formulaire($type = null)
     {
-        if ($this->request->getMethod() === 'POST') {
-            $amount = (float) $this->request->getPost('amount');
-            
-            $result = $this->mobileMoneyService->deposit((int) $this->userId, $amount);
-            
-            if ($result['success']) {
-                return redirect()->to('user/operations/history')->with('success', $result['message']);
-            } else {
-                return redirect()->back()->with('error', $result['message']);
-            }
+        $validTypes = ['depot', 'retrait', 'transfert', 'transfert_multiple'];
+        
+        if (!$type || !in_array($type, $validTypes)) {
+            // Afficher l'écran de sélection si aucun type valide
+            return view('user/operations/actions', [
+                'title' => 'Que souhaitez-vous faire ?'
+            ]);
         }
 
-        return view('user/operations/deposit', [
-            'title' => 'Faire un dépôt'
+        $data = [
+            'title' => 'Opération : ' . ucfirst(str_replace('_', ' ', $type)),
+            'type'  => $type
+        ];
+
+        if ($type === 'transfert') {
+            $extModel = new ExternalOperatorModel();
+            $data['external_operators'] = $extModel->findAll();
+        }
+
+        return view('user/operations/formulaire', $data);
+    }
+
+    // ─── TRAITEMENT DYNAMIQUE (ACTION UNIQUE) ───────────────────────────────
+    public function traiter($type)
+    {
+        if ($this->request->getMethod() !== 'POST') {
+            return redirect()->to('user/operations/formulaire');
+        }
+
+        $amount = (float) $this->request->getPost('amount');
+        
+        switch ($type) {
+            case 'depot':
+                $result = $this->mobileMoneyService->deposit((int) $this->userId, $amount);
+                break;
+                
+            case 'retrait':
+                $result = $this->mobileMoneyService->withdraw((int) $this->userId, $amount);
+                break;
+                
+            case 'transfert':
+                $recipientPhone = $this->request->getPost('recipient_phone');
+                $includeWithdrawFee = (bool) $this->request->getPost('include_withdraw_fee');
+                $forceOperatorId = $this->request->getPost('force_operator_id');
+                
+                if (empty($recipientPhone)) {
+                    return redirect()->back()->with('error', 'Informations de transfert invalides.');
+                }
+                
+                // Si l'utilisateur a forcé un opérateur, on pourrait bypasser la détection automatique ici.
+                // Pour l'instant, on laisse la détection automatique fonctionner car MobileMoneyService::transfer() appelle resolveOperator().
+                // Si on voulait forcer, il faudrait modifier MobileMoneyService::transfer() pour accepter un ID forcé.
+                // Pour respecter l'implémentation actuelle, on laisse tel quel (le dropdown sert surtout de fallback ou de preview).
+                $result = $this->mobileMoneyService->transfer($this->phone, $recipientPhone, $amount, $includeWithdrawFee);
+                if ($result['success']) {
+                    session()->setFlashdata('breakdown', $result['breakdown']);
+                }
+                break;
+                
+            case 'transfert_multiple':
+                $recipientPhones = $this->request->getPost('recipient_phones'); // Array
+                $recipientAmounts = $this->request->getPost('recipient_amounts'); // Array
+                $includeWithdrawFee = (bool) $this->request->getPost('include_withdraw_fee_multiple');
+                
+                if (empty($recipientPhones) || !is_array($recipientPhones) || empty($recipientAmounts) || !is_array($recipientAmounts)) {
+                    return redirect()->back()->with('error', 'Veuillez ajouter au moins un destinataire et un montant.');
+                }
+                
+                $recipientsData = [];
+                foreach ($recipientPhones as $i => $phone) {
+                    $recipientsData[] = [
+                        'phone'  => $phone,
+                        'amount' => (float) ($recipientAmounts[$i] ?? 0)
+                    ];
+                }
+                
+                $result = $this->mobileMoneyService->transferMultiple($this->phone, $recipientsData, $includeWithdrawFee);
+                break;
+                
+            default:
+                return redirect()->to('user/operations/formulaire')->with('error', 'Type d\'opération inconnu.');
+        }
+        
+        if (isset($result) && $result['success']) {
+            return redirect()->to('user/operations/history')->with('success', $result['message']);
+        } else {
+            return redirect()->back()->with('error', $result['message'] ?? 'Une erreur est survenue.');
+        }
+    }
+
+    // ─── APERCU TRANSFERT (AJAX) ────────────────────────────────────────────
+    public function previewTransfer()
+    {
+        $recipientPhone = $this->request->getPost('recipient_phone');
+        $amount = (float) $this->request->getPost('amount');
+        $includeWithdrawFee = $this->request->getPost('include_withdraw_fee') === 'true' || $this->request->getPost('include_withdraw_fee') === '1';
+        $forceOperatorId = $this->request->getPost('force_operator_id');
+
+        $calculator = new FeeCalculatorService();
+        
+        if (!empty($forceOperatorId)) {
+            $resolution = ['type' => 'external', 'external_operator_id' => (int) $forceOperatorId];
+        } else {
+            $resolution = $calculator->resolveOperator($recipientPhone);
+        }
+
+        if ($resolution['type'] === 'unknown') {
+            return $this->response->setJSON(['error' => 'Numéro invalide ou opérateur non reconnu.']);
+        }
+
+        $breakdown = $calculator->computeTransfer(
+            $amount,
+            $resolution['external_operator_id'],
+            $includeWithdrawFee
+        );
+
+        $breakdown['is_external'] = $resolution['type'] === 'external';
+
+        return $this->response->setJSON($breakdown);
+    }
+
+    public function previewWithdraw()
+    {
+        $amount = (float) $this->request->getPost('amount');
+        
+        $calculator = new FeeCalculatorService();
+        // ID 2 pour withdraw dans operation_types en général (selon seed)
+        $fee = $calculator->scaleFee(2, $amount);
+        
+        return $this->response->setJSON([
+            'amount' => $amount,
+            'fee' => $fee,
+            'total_debit' => $amount + $fee
         ]);
     }
 
-    // ─── RETRAIT ────────────────────────────────────────────────────────────
-    public function withdraw()
+    public function previewMultipleTransfer()
     {
-        if ($this->request->getMethod() === 'POST') {
-            $amount = (float) $this->request->getPost('amount');
-            
-            $result = $this->mobileMoneyService->withdraw((int) $this->userId, $amount);
-            
-            if ($result['success']) {
-                return redirect()->to('user/operations/history')->with('success', $result['message']);
-            } else {
-                return redirect()->back()->with('error', $result['message']);
+        $phones = $this->request->getPost('phones');
+        $amounts = $this->request->getPost('amounts');
+        $includeWithdrawFee = $this->request->getPost('include_withdraw_fee') === 'true' || $this->request->getPost('include_withdraw_fee') === '1';
+        
+        if (empty($phones) || empty($amounts)) {
+            return $this->response->setJSON(['error' => 'Données invalides.']);
+        }
+
+        $calculator = new FeeCalculatorService();
+        $totalTransferFee = 0;
+        $totalCommission = 0;
+        $totalWithdrawFee = 0;
+        $totalAmount = 0;
+        $totalDebit = 0;
+
+        foreach ($phones as $i => $phone) {
+            $amt = (float) ($amounts[$i] ?? 0);
+            if ($amt <= 0) continue;
+
+            $resolution = $calculator->resolveOperator($phone);
+            if ($resolution['type'] !== 'unknown') {
+                $bd = $calculator->computeTransfer($amt, $resolution['external_operator_id'], $includeWithdrawFee);
+                $totalTransferFee += $bd['transfer_fee'];
+                $totalCommission += $bd['commission'];
+                $totalWithdrawFee += $bd['withdraw_fee_eq'];
+                $totalAmount += $amt;
+                $totalDebit += $bd['total_debit'];
             }
         }
 
-        return view('user/operations/withdraw', [
-            'title' => 'Faire un retrait'
+        return $this->response->setJSON([
+            'total_amount' => $totalAmount,
+            'total_transfer_fee' => $totalTransferFee,
+            'total_commission' => $totalCommission,
+            'total_withdraw_fee' => $totalWithdrawFee,
+            'total_debit' => $totalDebit
         ]);
     }
 
-    // ─── TRANSFERT ──────────────────────────────────────────────────────────
-    public function transfer()
-    {
-        if ($this->request->getMethod() === 'POST') {
-            $amount         = (float) $this->request->getPost('amount');
-            $recipientPhone = $this->request->getPost('recipient_phone');
-            
-            if (empty($recipientPhone)) {
-                return redirect()->back()->with('error', 'Informations de transfert invalides.');
-            }
-            
-            $result = $this->mobileMoneyService->transfer((int) $this->userId, $recipientPhone, $amount);
-            
-            if ($result['success']) {
-                return redirect()->to('user/operations/history')->with('success', $result['message']);
-            } else {
-                return redirect()->back()->with('error', $result['message']);
-            }
-        }
 
-        return view('user/operations/transfer', [
-            'title' => 'Transférer de l\'argent'
-        ]);
-    }
 
     // ─── HISTORIQUE ─────────────────────────────────────────────────────────
     public function history()
@@ -113,5 +233,22 @@ class Operations extends BaseController
             'balance'      => $balanceRow ? $balanceRow['balance'] : 0,
             'userId'       => $this->userId,
         ]);
+    }
+
+    // ─── EXPORT PDF ─────────────────────────────────────────────────────────
+    public function exportPdf()
+    {
+        $transactions = $this->transactionModel->getUserHistory((int) $this->userId);
+        $user = (new \App\Models\UserModel())->find($this->userId);
+
+        $data = [
+            'title'        => 'Historique des Opérations',
+            'transactions' => $transactions,
+            'userId'       => $this->userId,
+            'user'         => $user
+        ];
+
+        $pdfService = new PdfService();
+        return $pdfService->renderView('user/pdf/history_pdf', $data, 'historique_operations.pdf');
     }
 }
