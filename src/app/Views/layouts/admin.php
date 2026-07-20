@@ -10,11 +10,18 @@
 
 <div class="app">
 
+    <!-- ===== OVERLAY MOBILE ===== -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
     <!-- ===== SIDEBAR ===== -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+
         <div class="sidebar__brand">
             <div class="sidebar__brand-icon">A</div>
             <span><?= esc(getenv('app.name') ?: 'MonApp') ?></span>
+            <button class="sidebar__close-btn" onclick="closeSidebar()" aria-label="Fermer le menu">
+                <?= svg_icon('x') ?>
+            </button>
         </div>
 
         <nav class="sidebar__nav">
@@ -38,7 +45,16 @@
             <a href="<?= base_url('admin/types') ?>"
                class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/admin/types') ? 'active' : '' ?>">
                 <?= svg_icon('shield') ?>
-                Types & Rôles
+                Types &amp; Rôles
+            </a>
+            <?php endif; ?>
+
+            <?php if (has_permission('import.csv')): ?>
+            <span class="sidebar__group-label">Outils</span>
+            <a href="<?= base_url('admin/import') ?>"
+               class="sidebar__link <?= str_starts_with(current_url(true)->getPath(), '/admin/import') ? 'active' : '' ?>">
+                <?= svg_icon('upload') ?>
+                Import CSV
             </a>
             <?php endif; ?>
 
@@ -69,9 +85,15 @@
     <!-- ===== MAIN ===== -->
     <div class="main">
         <header class="topbar">
+            <button class="topbar__burger" onclick="openSidebar()" aria-label="Ouvrir le menu">
+                <?= svg_icon('menu') ?>
+            </button>
             <span class="topbar__title"><?= esc($pageTitle ?? $title ?? '') ?></span>
             <div class="topbar__right">
                 <span class="badge badge--blue"><?= esc(session('user_type_name') ?? 'Admin') ?></span>
+                <a href="<?= base_url('logout') ?>" class="topbar__logout-link" title="Se déconnecter">
+                    <?= svg_icon('logout') ?>
+                </a>
             </div>
         </header>
 
@@ -82,12 +104,20 @@
             <?php if (session()->getFlashdata('error')): ?>
                 <div class="alert alert--error"><?= esc(session()->getFlashdata('error')) ?></div>
             <?php endif; ?>
+            <?php if (session()->getFlashdata('info')): ?>
+                <div class="alert alert--info"><?= esc(session()->getFlashdata('info')) ?></div>
+            <?php endif; ?>
 
             <?= $this->renderSection('content') ?>
         </main>
     </div>
 
 </div>
+
+<script>
+function openSidebar()  { document.getElementById('sidebar').classList.add('is-open'); document.getElementById('sidebarOverlay').classList.add('is-open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('is-open'); document.getElementById('sidebarOverlay').classList.remove('is-open'); }
+</script>
 
 <?php
 // Helper SVG icons inline
@@ -100,7 +130,9 @@ function svg_icon(string $name): string {
         'logout'  => '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>',
         'wallet'  => '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3"/></svg>',
         'lock'    => '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>',
-        'calendar'=> '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-13.5-6h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm3-6h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm3-6h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/></svg>',
+        'upload'  => '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>',
+        'menu'    => '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>',
+        'x'       => '<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>',
     ];
     return $icons[$name] ?? '';
 }
