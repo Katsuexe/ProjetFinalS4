@@ -6,33 +6,37 @@ Ce dépôt contient le projet basé sur CodeIgniter 4. L'application intègre un
 
 1. **Cloner et préparer le dossier `src`** :
    Le code applicatif se trouve dans le sous-dossier `src/`.
+
    ```bash
    cd src
    ```
-
 2. **Installer les dépendances PHP** :
+   (!!! important: il faut veriifer votre php.ini dans votre configuration pour qu'il suive les dépendances demandées avant de lancer `composer install`)
+
    ```bash
    composer install
    ```
-
 3. **Configurer l'environnement** :
    Copier le fichier template vers `.env` :
+
    ```bash
    cp env .env
    ```
-   **Important** : Ouvrez `.env` et configurez vos accès à la base de données (`database.default.hostname`, `database.default.database`, `database.default.username`, `database.default.password`) ainsi que l'URL (`app.baseURL = 'http://localhost:8080'`).
 
+   **Important** : Ouvrez `.env` et configurez vos accès à la base de données (`database.default.hostname`, `database.default.database`, `database.default.username`, `database.default.password`) ainsi que l'URL (`app.baseURL = 'http://localhost:8080'`).
 4. **Migrations et Seeders** :
    Générez les tables et insérez les données par défaut (incluant les permissions, types d'utilisateurs et comptes de test).
+
    ```bash
    php spark migrate
    php spark db:seed MainSeeder
    ```
-
 5. **Démarrer le serveur local** :
+
    ```bash
    php spark serve
    ```
+
    L'application sera accessible sur `http://localhost:8080`.
 
 ---
