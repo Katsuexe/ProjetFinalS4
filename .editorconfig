@@ -1,0 +1,41 @@
+# EditorConfig helps maintain consistent coding styles for multiple developers
+# working on the same project across various editors and IDEs.
+# See https://editorconfig.org
+
+root = true
+
+# Default
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+# PHP
+[*.php]
+indent_size = 4
+
+# JavaScript
+[*.{js,jsx,ts,tsx,json}]
+indent_size = 2
+
+# YAML
+[*.{yml,yaml}]
+indent_size = 2
+
+# HTML
+[*.{html,htm}]
+indent_size = 2
+
+# CSS
+[*.{css,scss,sass,less}]
+indent_size = 2
+
+# Markdown
+[*.md]
+trim_trailing_whitespace = false
+
+# Batch
+[*.{bat,cmd,com,exe}]
+end_of_line = crlf

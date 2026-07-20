@@ -1,18 +1,46 @@
-*/config/development
-*/logs/log-*.php
-!*/logs/index.html
-*/cache/*
-!system/cache/*
-!*/cache/index.html
-!*/cache/.htaccess
+# CodeIgniter 4 .gitignore in src/
 
-user_guide_src/build/*
-user_guide_src/cilexer/build/*
-user_guide_src/cilexer/dist/*
-user_guide_src/cilexer/pycilexer.egg-info/*
+# Executable files
+/src/spark
 
-#codeigniter 3
-application/logs/*
-!application/logs/index.html
-!application/logs/.htaccess
+# Vendor directory
+/src/vendor/
 /vendor/
+
+# Writable directory
+/src/writable/*
+/src/writable/.*
+!/src/writable/.gitkeep
+!/src/writable/index.html
+!/src/writable/cache/index.html
+!/src/writable/debugbar/index.html
+!/src/writable/logs/index.html
+!/src/writable/session/index.html
+!/src/writable/uploads/index.html
+
+*.db
+*.sqlite
+
+# Environmental variables
+/src/.env
+/src/.env.backup
+/src/.env.production
+/src/.env.development
+/src/.env.testing
+.env
+
+# OS/IDE files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# CodeIgniter system core (géré par Composer)
+/src/system/
+
+# Archives temporaires
+*.zip
+
+# Workspace / Temporary files
+/Workspace/
+/WorkSpace/

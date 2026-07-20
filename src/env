@@ -1,0 +1,84 @@
+# Exemple de variables d'environnement
+# Copier ce fichier en .env avant de démarrer le projet.
+
+CI_ENVIRONMENT = development
+app.baseURL    = http://localhost:8080/
+app.name       = BlueMoney
+
+# =============================================================================
+# BASE DE DONNÉES
+# Décommenter UN seul bloc selon votre driver.
+# Seul database.default.DBDriver est obligatoire pour changer de base.
+# =============================================================================
+
+# ── MySQL / MariaDB ──────────────────────────────────────────────────────────
+# database.default.DBDriver = MySQLi
+# database.default.hostname = localhost
+# database.default.database = database_name
+# database.default.username = username
+# database.default.password = password
+# database.default.port     = 3306
+# database.default.DBPrefix =
+
+# ── PostgreSQL ───────────────────────────────────────────────────────────────
+# database.default.DBDriver = Postgre
+# database.default.hostname = localhost
+# database.default.database = database_name
+# database.default.username = username
+# database.default.password = password
+# database.default.port     = 5432
+# database.default.schema   = public
+# database.default.DBPrefix =
+
+# ── SQLite3 ──────────────────────────────────────────────────────────────────
+# Seul le chemin du fichier est nécessaire (pas de hostname/username/password).
+#
+# Use SQLite3 for local testing
+database.default.DBDriver = SQLite3
+#
+# Chemin du fichier .db :
+#   Relatif à la racine du projet → writable/db/app.db  (dossier créé auto.)
+#   Absolu                        → /var/data/app.db
+#   En mémoire (tests)            → :memory:
+#
+database.default.database = writable/db/app.db
+
+# ── Microsoft SQL Server ─────────────────────────────────────────────────────
+# database.default.DBDriver = SQLSRV
+# database.default.hostname = localhost
+# database.default.database = database_name
+# database.default.username = username
+# database.default.password = password
+# database.default.port     = 1433
+# database.default.schema   = dbo
+# database.default.DBPrefix =
+
+# ── Oracle DB (OCI8) ─────────────────────────────────────────────────────────
+# database.default.DBDriver = OCI8
+# database.default.DSN      = localhost:1521/XEPDB1
+# database.default.username = username
+# database.default.password = password
+# database.default.DBPrefix =
+
+# =============================================================================
+
+# Clé d'encryption / session
+# app.encryptionKey =
+
+# Gestion des logs
+# app.logThreshold = 4
+
+# Autres variables locales
+# mail.protocol = smtp
+# mail.SMTPHost = smtp.example.com
+# mail.SMTPUser = user@example.com
+# mail.SMTPPass = secret
+
+# =============================================================================
+# MOBILE MONEY — Numéro secret opérateur
+# Ce numéro, saisi sur la page de connexion, redirige vers le formulaire
+# email/mot de passe réservé aux admins et modérateurs.
+# NE PAS partager avec les clients.
+# =============================================================================
+
+# app.adminSecretNumber = 0000000000
