@@ -1,76 +1,84 @@
-#--------------------------------------------------------------------
-# Example Environment Configuration file
-#
-# This file can be used as a starting point for your own
-# custom .env files, and contains most of the possible settings
-# available in a default install.
-#
-# By default, all of the settings are commented out. If you want
-# to override the setting, you must un-comment it by removing the '#'
-# at the beginning of the line.
-#--------------------------------------------------------------------
+# Exemple de variables d'environnement
+# Copier ce fichier en .env avant de démarrer le projet.
 
-#--------------------------------------------------------------------
-# ENVIRONMENT
-#--------------------------------------------------------------------
+CI_ENVIRONMENT = development
+app.baseURL    = http://localhost:8080/
+app.name       = BlueMoney
 
-# CI_ENVIRONMENT = production
+# =============================================================================
+# BASE DE DONNÉES
+# Décommenter UN seul bloc selon votre driver.
+# Seul database.default.DBDriver est obligatoire pour changer de base.
+# =============================================================================
 
-#--------------------------------------------------------------------
-# APP
-#--------------------------------------------------------------------
-
-app.name = BlueMoney
-# app.baseURL = ''
-# If you have trouble with `.`, you could also use `_`.
-# app_baseURL = ''
-# app.forceGlobalSecureRequests = false
-# app.CSPEnabled = false
-
-#--------------------------------------------------------------------
-# DATABASE
-#--------------------------------------------------------------------
-
-# database.default.hostname = localhost
-# database.default.database = ci4
-# database.default.username = root
-# database.default.password = root
+# ── MySQL / MariaDB ──────────────────────────────────────────────────────────
 # database.default.DBDriver = MySQLi
+# database.default.hostname = localhost
+# database.default.database = database_name
+# database.default.username = username
+# database.default.password = password
+# database.default.port     = 3306
 # database.default.DBPrefix =
-# database.default.port = 3306
 
-# If you use MySQLi as tests, first update the values of Config\Database::$tests.
-# database.tests.hostname = localhost
-# database.tests.database = ci4_test
-# database.tests.username = root
-# database.tests.password = root
-# database.tests.DBDriver = MySQLi
-# database.tests.DBPrefix =
-# database.tests.charset = utf8mb4
-# database.tests.DBCollat = utf8mb4_general_ci
-# database.tests.port = 3306
+# ── PostgreSQL ───────────────────────────────────────────────────────────────
+# database.default.DBDriver = Postgre
+# database.default.hostname = localhost
+# database.default.database = database_name
+# database.default.username = username
+# database.default.password = password
+# database.default.port     = 5432
+# database.default.schema   = public
+# database.default.DBPrefix =
 
-#--------------------------------------------------------------------
-# ENCRYPTION
-#--------------------------------------------------------------------
+# ── SQLite3 ──────────────────────────────────────────────────────────────────
+# Seul le chemin du fichier est nécessaire (pas de hostname/username/password).
+#
+# Use SQLite3 for local testing
+database.default.DBDriver = SQLite3
+#
+# Chemin du fichier .db :
+#   Relatif à la racine du projet → writable/db/app.db  (dossier créé auto.)
+#   Absolu                        → /var/data/app.db
+#   En mémoire (tests)            → :memory:
+#
+database.default.database = writable/db/app.db
 
-# encryption.key =
+# ── Microsoft SQL Server ─────────────────────────────────────────────────────
+# database.default.DBDriver = SQLSRV
+# database.default.hostname = localhost
+# database.default.database = database_name
+# database.default.username = username
+# database.default.password = password
+# database.default.port     = 1433
+# database.default.schema   = dbo
+# database.default.DBPrefix =
 
-#--------------------------------------------------------------------
-# SESSION
-#--------------------------------------------------------------------
+# ── Oracle DB (OCI8) ─────────────────────────────────────────────────────────
+# database.default.DBDriver = OCI8
+# database.default.DSN      = localhost:1521/XEPDB1
+# database.default.username = username
+# database.default.password = password
+# database.default.DBPrefix =
 
-# session.driver = 'CodeIgniter\Session\Handlers\FileHandler'
-# session.savePath = null
+# =============================================================================
 
-#--------------------------------------------------------------------
-# LOGGER
-#--------------------------------------------------------------------
+# Clé d'encryption / session
+# app.encryptionKey =
 
-# logger.threshold = 4
+# Gestion des logs
+# app.logThreshold = 4
 
-#--------------------------------------------------------------------
-# MOBILE MONEY
-#--------------------------------------------------------------------
+# Autres variables locales
+# mail.protocol = smtp
+# mail.SMTPHost = smtp.example.com
+# mail.SMTPUser = user@example.com
+# mail.SMTPPass = secret
+
+# =============================================================================
+# MOBILE MONEY — Numéro secret opérateur
+# Ce numéro, saisi sur la page de connexion, redirige vers le formulaire
+# email/mot de passe réservé aux admins et modérateurs.
+# NE PAS partager avec les clients.
+# =============================================================================
 
 # app.adminSecretNumber = 0000000000
