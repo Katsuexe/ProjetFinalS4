@@ -7,6 +7,7 @@ use App\Models\UserBalanceModel;
 use App\Models\TransactionModel;
 use App\Models\OperationTypeModel;
 use App\Models\FeeScaleModel;
+use App\Models\FeeCreditModel;
 
 class MobileMoneyService
 {
@@ -16,6 +17,7 @@ class MobileMoneyService
     protected $transactionModel;
     protected $opTypeModel;
     protected $feeScaleModel;
+    protected $feeCreditModel;
 
     public function __construct()
     {
@@ -25,6 +27,7 @@ class MobileMoneyService
         $this->transactionModel = new TransactionModel();
         $this->opTypeModel      = new OperationTypeModel();
         $this->feeScaleModel    = new FeeScaleModel();
+        $this->feeCreditModel   = new FeeCreditModel();
     }
 
     /**
@@ -69,8 +72,8 @@ class MobileMoneyService
     }
 
     /**
-     * Effectue un retrait depuis le compte de l'utilisateur (avec calcul des frais).
-     * @return array ['success' => bool, 'message' => string, 'fee' => float]
+     * Effectue un retrait depuis le compte de l'utilisateur (avec calcul des frais et consommation de crédits).
+     * @return array ['success' => bool, 'message' => string, 'fee' => float, 'credit_consumed' => float]
      */
     public function withdraw(int $userId, float $amount): array
     {
@@ -86,14 +89,30 @@ class MobileMoneyService
                 throw new \Exception("Type d'opération 'withdraw' introuvable.");
             }
 
-            // Calcul des frais
-            $fee = $this->feeScaleModel->getApplicableFee($opTypeId, $amount);
-            $totalToDeduct = $amount + $fee;
+            $calculator = new FeeCalculatorService();
+            $fee = $calculator->scaleFee($opTypeId, $amount);
+
+            // Consommer les crédits les plus anciens en premier
+            $credits = $this->feeCreditModel->where('user_id', $userId)
+                                            ->where('amount_remaining >', 0)
+                                            ->orderBy('created_at', 'ASC')
+                                            ->findAll();
+
+            $consumed = 0.0;
+            foreach ($credits as $credit) {
+                if ($consumed >= $fee) break;
+                $take = min($credit['amount_remaining'], $fee - $consumed);
+                $this->feeCreditModel->update($credit['id'], ['amount_remaining' => $credit['amount_remaining'] - $take]);
+                $consumed += $take;
+            }
+
+            $realFee = $fee - $consumed; // Ce qui reste réellement à payer par l'utilisateur
+            $totalToDeduct = $amount + $realFee;
 
             // Vérifier le solde
             $balanceRow = $this->balanceModel->where('id_user', $userId)->first();
             if (!$balanceRow || $balanceRow['balance'] < $totalToDeduct) {
-                throw new \Exception('Solde insuffisant (incluant ' . $fee . ' Ar de frais).');
+                throw new \Exception('Solde insuffisant (incluant ' . $realFee . ' Ar de frais).');
             }
 
             // Débiter le compte
@@ -107,15 +126,22 @@ class MobileMoneyService
                 'recipient_id'      => null,
                 'operation_type_id' => $opTypeId,
                 'amount'            => $amount,
-                'fee_amount'        => $fee,
+                'fee_amount'        => $realFee, // On trace les frais réellement payés (ou le total ? TODO suggère realFee)
                 'created_at'        => date('Y-m-d H:i:s'),
             ]);
 
             $this->db->transComplete();
+
+            $msg = "Retrait de {$amount} Ar effectué. Frais payés: {$realFee} Ar.";
+            if ($consumed > 0) {
+                $msg .= " (Frais offerts grâce à vos transferts: {$consumed} Ar)";
+            }
+
             return [
                 'success' => true, 
-                'message' => "Retrait de {$amount} Ar effectué. Frais: {$fee} Ar.",
-                'fee'     => $fee
+                'message' => $msg,
+                'fee'     => $realFee,
+                'credit_consumed' => $consumed
             ];
 
         } catch (\Exception $e) {
@@ -124,74 +150,135 @@ class MobileMoneyService
     }
 
     /**
-     * Effectue un transfert d'un utilisateur à un autre (avec calcul des frais pour l'expéditeur).
-     * @return array ['success' => bool, 'message' => string, 'fee' => float]
+     * @param string $senderPhone
+     * @param string $recipientPhone
+     * @param float  $amount
+     * @param bool   $includeWithdrawFee
+     * @return array ['success' => bool, 'transaction_id' => int, 'breakdown' => array]
      */
-    public function transfer(int $senderId, string $recipientPhone, float $amount): array
+    public function transfer(string $senderPhone, string $recipientPhone, float $amount, bool $includeWithdrawFee = true): array
     {
         if ($amount <= 0) {
-            throw new \Exception("Le montant du transfert doit être supérieur à 0.");
+            throw new \RuntimeException("Le montant du transfert doit être supérieur à 0.");
         }
 
-        try {
-            $this->db->transException(true)->transStart();
+        if ($senderPhone === $recipientPhone) {
+            throw new \RuntimeException("Vous ne pouvez pas transférer de l'argent vers votre propre numéro.");
+        }
 
-            // S'assurer qu'on ne s'envoie pas à soi-même
-            $sender = $this->userModel->find($senderId);
-            if ($sender && $sender['phone'] === $recipientPhone) {
-                throw new \Exception("Vous ne pouvez pas transférer de l'argent vers votre propre compte.");
-            }
+        $calculator = new FeeCalculatorService();
+        $resolution = $calculator->resolveOperator($recipientPhone);
 
-            // Chercher le destinataire
+        if ($resolution['type'] === 'unknown') {
+            throw new \RuntimeException('Opération impossible.'); // Message générique de sécurité
+        }
+
+        $breakdown = $calculator->computeTransfer($amount, $resolution['external_operator_id'], $includeWithdrawFee);
+
+        $this->db->transStart();
+
+        $sender = $this->userModel->where('phone', $senderPhone)->first();
+        if (!$sender) {
+            throw new \RuntimeException('Opération impossible.');
+        }
+
+        $balanceRow = $this->balanceModel->where('id_user', $sender['id'])->first();
+        if (!$balanceRow || $balanceRow['balance'] < $breakdown['total_debit']) {
+            throw new \RuntimeException('Solde insuffisant pour ce transfert.');
+        }
+
+        // Débit expéditeur
+        $this->balanceModel->where('id_user', $sender['id'])
+                           ->set('balance', 'balance - ' . $breakdown['total_debit'], false)
+                           ->update();
+
+        $opTypeId = $this->opTypeModel->getIdBySlug('transfer');
+        $transactionId = null;
+
+        if ($resolution['type'] === 'internal') {
             $recipient = $this->userModel->where('phone', $recipientPhone)->first();
             if (!$recipient) {
-                throw new \Exception("Numéro de destinataire introuvable.");
+                throw new \RuntimeException('Opération impossible.');
             }
+            
+            // Si pas de solde existant pour le destinataire, adjustBalance le crée
+            $this->balanceModel->adjustBalance($recipient['id'], $breakdown['amount_received']);
 
-            $opTypeId = $this->opTypeModel->getIdBySlug('transfer');
-            if (!$opTypeId) {
-                throw new \Exception("Type d'opération 'transfer' introuvable.");
-            }
-
-            // Calcul des frais
-            $fee = $this->feeScaleModel->getApplicableFee($opTypeId, $amount);
-            $totalToDeduct = $amount + $fee;
-
-            // Vérifier le solde expéditeur
-            $balanceRow = $this->balanceModel->where('id_user', $senderId)->first();
-            if (!$balanceRow || $balanceRow['balance'] < $totalToDeduct) {
-                throw new \Exception('Solde insuffisant (incluant ' . $fee . ' Ar de frais).');
-            }
-
-            // 1. Débiter l'envoyeur
-            $this->balanceModel->where('id_user', $senderId)
-                               ->set('balance', 'balance - ' . $totalToDeduct, false)
-                               ->update();
-
-            // 2. Créditer le destinataire
-            $this->balanceModel->where('id_user', $recipient['id'])
-                               ->set('balance', 'balance + ' . $amount, false)
-                               ->update();
-
-            // 3. Historique
-            $this->transactionModel->insert([
-                'user_id'           => $senderId,
+            $transactionId = $this->transactionModel->insert([
+                'user_id'           => $sender['id'],
                 'recipient_id'      => $recipient['id'],
                 'operation_type_id' => $opTypeId,
                 'amount'            => $amount,
-                'fee_amount'        => $fee,
+                'fee_amount'        => $breakdown['transfer_fee'],
                 'created_at'        => date('Y-m-d H:i:s'),
             ]);
 
-            $this->db->transComplete();
-            return [
-                'success' => true, 
-                'message' => "Transfert de {$amount} Ar vers {$recipientPhone} réussi. Frais: {$fee} Ar.",
-                'fee'     => $fee
-            ];
-
-        } catch (\Exception $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
+            // décision 4A : crédit de frais de retrait pour le DESTINATAIRE INTERNE uniquement
+            if ($includeWithdrawFee && $breakdown['withdraw_fee_eq'] > 0) {
+                $this->feeCreditModel->insert([
+                    'user_id'               => $recipient['id'],
+                    'amount_remaining'      => $breakdown['withdraw_fee_eq'],
+                    'source_transaction_id' => $transactionId,
+                    'created_at'            => date('Y-m-d H:i:s'),
+                ]);
+            }
+        } else {
+            // externe (décision 1A) : pas de compte destinataire, juste une trace
+            $transactionId = $this->transactionModel->insert([
+                'user_id'               => $sender['id'],
+                'recipient_id'          => null,
+                'operation_type_id'     => $opTypeId,
+                'amount'                => $amount,
+                'fee_amount'            => $breakdown['transfer_fee'],
+                'external_operator_id'  => $resolution['external_operator_id'],
+                'external_phone'        => $recipientPhone,
+                'commission_amount'     => $breakdown['commission'],
+                'envoye'                => 0, // décision 3B
+                'created_at'            => date('Y-m-d H:i:s'),
+            ]);
         }
+
+        $this->db->transComplete();
+        if ($this->db->transStatus() === false) {
+            throw new \RuntimeException('Erreur lors du transfert.');
+        }
+
+        return [
+            'success'        => true,
+            'message'        => 'Transfert effectué avec succès.',
+            'transaction_id' => $transactionId, 
+            'breakdown'      => $breakdown
+        ];
+    }
+
+    /**
+     * Décision 5A : une transaction par destinataire, split égal, frais calculé par ligne.
+     */
+    public function transferMultiple(string $senderPhone, array $recipientPhones, float $totalAmount, bool $includeWithdrawFee = true): array
+    {
+        $n = count($recipientPhones);
+        if ($n === 0) {
+            throw new \RuntimeException("Aucun destinataire sélectionné.");
+        }
+
+        $amountPerRecipient = round($totalAmount / $n, 2); // split égal
+
+        $this->db->transStart(); // tout ou rien
+
+        $results = [];
+        foreach ($recipientPhones as $phone) {
+            $results[] = $this->transfer($senderPhone, $phone, $amountPerRecipient, $includeWithdrawFee);
+        }
+
+        $this->db->transComplete();
+        if ($this->db->transStatus() === false) {
+            throw new \RuntimeException('Opération impossible pour un ou plusieurs destinataires. Annulation.');
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Transferts groupés effectués avec succès.',
+            'results' => $results
+        ];
     }
 }
