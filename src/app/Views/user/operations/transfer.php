@@ -22,7 +22,7 @@
             
             <div class="form__div">
                 <input type="tel" name="recipient_phone" id="recipient_phone" class="form__input" placeholder=" " required inputmode="numeric" pattern="[0-9]{10}" minlength="10" maxlength="10">
-                <label for="recipient_phone" class="form__label">Numéro du destinataire (10 chiffres)</label>
+                <label for="recipient_phone" class="form__label">Numéro du destinataire</label>
             </div>
 
             <div class="form__div">
