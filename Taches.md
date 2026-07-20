@@ -33,4 +33,24 @@ Avant d'attaquer les fonctionnalites specifiques du sujet, le socle technique a 
 - [x] Consulter l'historique des operations (tableau complet avec type, montant, frais, date).
 
 ---
+
+### 🔐 Identifiants de Test
+
+Pour evaluer le projet, voici les donnees issues du fichier `Workspace/users.csv` :
+
+**Comment se connecter en tant qu'Admin/Operateur ?**
+1. Sur la page de connexion, entrez le **numero secret : `0330000000`**
+2. Le formulaire client se transforme alors en formulaire Operateur (Email + Mot de passe).
+3. Utilisez les identifiants suivants :
+   - **Administrateur** : `admin@example.com` / `Admin@1234`
+   - **Moderateur** : `mod@example.com` / `Modo@1234`
+
+**Comment se connecter en tant que Client (Mobile Money) ?**
+1. Sur la page de connexion, entrez simplement l'un des numeros de test.
+2. Le login est automatique et immediat (sans mot de passe).
+   - **Client Alice** : `0331234567`
+   - **Client Bob** : `0341234567`
+*(Note : Entrer n'importe quel autre numero valide avec un prefixe autorise creera un nouveau compte client a la volee).*
+
+---
 *(Toutes les fonctionnalites ont ete implementees, testees et livrees.)*
