@@ -28,6 +28,8 @@
             placeholder=" "
             value="<?= old('username') ?>"
             autocomplete="username"
+            minlength="3"
+            maxlength="100"
             required
         >
         <label for="username" class="form__label">Nom d'utilisateur</label>
@@ -63,6 +65,7 @@
             class="form__input <?= isset($errors['password']) ? 'is-invalid' : '' ?>"
             placeholder=" "
             autocomplete="new-password"
+            minlength="8"
             required
         >
         <label for="password" class="form__label">Mot de passe</label>
@@ -80,6 +83,7 @@
             class="form__input <?= isset($errors['password_confirm']) ? 'is-invalid' : '' ?>"
             placeholder=" "
             autocomplete="new-password"
+            minlength="8"
             required
         >
         <label for="password_confirm" class="form__label">Confirmer le mot de passe</label>

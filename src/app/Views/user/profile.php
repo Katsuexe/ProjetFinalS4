@@ -41,7 +41,6 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn--primary">Enregistrer</button>
-            <a href="<?= base_url('user/password') ?>" class="btn btn--outline">Changer le mot de passe</a>
         </div>
     </form>
 </div>

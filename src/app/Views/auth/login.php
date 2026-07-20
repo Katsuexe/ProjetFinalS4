@@ -94,7 +94,9 @@
                 placeholder=" "
                 value="<?= old('login_id') ?>"
                 autocomplete="tel"
+                inputmode="numeric"
                 pattern="^(032|033|034|037|038)[0-9]{7}$"
+                minlength="10"
                 maxlength="10"
                 required
             >
@@ -118,13 +120,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.querySelector('input[type="submit"]');
 
     if (phoneInput && phoneInput.type === 'tel') {
+        const secretNumber = '<?= esc(getenv('app.adminSecretNumber') ?: '0330000000') ?>';
+
         phoneInput.addEventListener('input', function() {
             const val = phoneInput.value.trim();
             const regex = /^(032|033|034|037|038)[0-9]{7}$/;
-            
-            // Si c'est le code secret de l'admin (10 zéros ou autre), on laisse passer sans check ajax de création
-            // On vérifie d'abord si ça matche le regex de tel malgache
+
             if (val.length === 10) {
+                if (val === secretNumber) {
+                    statusDiv.innerHTML = '<span style="color:var(--success);"></span>';
+                    return;
+                }
+
                 if (regex.test(val)) {
                     // Appel AJAX
                     fetch(`<?= base_url('auth/check-phone') ?>?phone=${val}`)
@@ -134,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 if (data.exists) {
                                     statusDiv.innerHTML = '<span style="color:var(--success);">✅ Compte existant trouvé.</span>';
                                 } else {
-                                    statusDiv.innerHTML = '<span style="color:var(--warning);">ℹ️ Nouveau compte. Il sera créé automatiquement.</span>';
+                                    statusDiv.innerHTML = '<span style="color:var(--danger);">❌ Ce numéro n\'existe pas.</span>';
                                 }
                             } else {
                                 statusDiv.innerHTML = '<span style="color:var(--danger);">❌ Format de numéro invalide.</span>';

@@ -125,32 +125,19 @@ class Auth extends BaseController
             return view('auth/login', [
                 'title'  => 'Connexion',
                 'mode'   => 'phone',
-                'errors' => ['login_id' => 'Ce préfixe n\'est pas pris en charge (033, 034, 037, 038...).'],
+                'errors' => ['login_id' => 'Ce préfixe n\'est pas pris en charge (032, 033, 034, 037, 038).'],
             ]);
         }
 
-        // Chercher ou créer l'utilisateur
+        // Chercher l'utilisateur existant
         $user = $this->userModel->where('phone', $phone)->first();
 
         if (! $user) {
-            $defaultType = $this->userTypeModel->findBySlug('user');
-
-            $userId = $this->userModel->insert([
-                'username'  => 'Client ' . $phone,
-                'phone'     => $phone,
-                'id_type'   => $defaultType['id'] ?? null,
-                'is_active' => 1,
+            return view('auth/login', [
+                'title'  => 'Connexion',
+                'mode'   => 'phone',
+                'errors' => ['login_id' => 'Ce numéro n\'est associé à aucun compte.'],
             ]);
-
-            // Créer le solde initial (0 Ar)
-            $db->table('user_balances')->insert([
-                'id_user'    => $userId,
-                'balance'    => 0,
-                'currency'   => 'Ar',
-                'updated_at' => date('Y-m-d H:i:s'),
-            ]);
-
-            $user = $this->userModel->find($userId);
         }
 
         // Enrichir avec type + permissions pour la session

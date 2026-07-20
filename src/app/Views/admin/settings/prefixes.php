@@ -60,7 +60,7 @@
                 <?= csrf_field() ?>
                 <div class="form__div">
                     <input type="text" name="prefix" id="prefix" class="form__input" placeholder=" "
-                           pattern="\d{3,4}" maxlength="4" required>
+                           inputmode="numeric" pattern="\d{3,4}" maxlength="4" required>
                     <label for="prefix" class="form__label">Préfixe (ex : 033)</label>
                 </div>
                 <button type="submit" class="button button--primary" style="width:100%;">Ajouter</button>

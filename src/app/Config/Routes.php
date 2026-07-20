@@ -11,6 +11,8 @@ $routes->get('/', 'Home::index');
 $routes->group('', ['filter' => 'guest'], static function ($routes) {
     $routes->get('login',    'Auth::login');
     $routes->post('login',   'Auth::loginProcess');
+    $routes->get('auth/check-phone', 'Auth::checkPhone');
+
     // Inscription désactivée : route retirée pour empêcher l'accès public
     // $routes->get('register', 'Auth::register');
     // $routes->post('register','Auth::registerProcess');
