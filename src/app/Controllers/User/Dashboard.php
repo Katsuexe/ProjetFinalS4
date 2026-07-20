@@ -21,21 +21,14 @@ class Dashboard extends BaseController
 
     public function index(): string
     {
-        $db  = \Config\Database::connect();
         $uid = (int) session('user_id');
 
         // Solde — affiché pour tous les clients Mobile Money
-        $row = $db->table('user_balances')->where('id_user', $uid)->get()->getRowArray();
+        $row = $this->balanceModel->where('id_user', $uid)->first();
 
-        // Dernières transactions (5)
-        $recentTx = $db->table('transactions')
-            ->select('transactions.amount, transactions.fee_amount, transactions.created_at, op.name AS op_name')
-            ->join('operation_types op', 'op.id = transactions.operation_type_id')
-            ->where('transactions.user_id', $uid)
-            ->orWhere('transactions.recipient_id', $uid)
-            ->orderBy('transactions.created_at', 'DESC')
-            ->limit(5)
-            ->get()->getResultArray();
+        // Dernières transactions (5) via le modèle
+        $transactionModel = new \App\Models\TransactionModel();
+        $recentTx = $transactionModel->getRecentForUser($uid, 5);
 
         return view('user/dashboard', [
             'title'              => 'Mon espace',
@@ -46,6 +39,7 @@ class Dashboard extends BaseController
             'recent_transactions'=> $recentTx,
         ]);
     }
+
 
     public function profile(): string
     {

@@ -110,4 +110,18 @@ class UserModel extends Model
     {
         return password_hash($plain, PASSWORD_DEFAULT);
     }
+
+    /**
+     * Récupère la liste des comptes clients (Mobile Money) avec leur solde.
+     */
+    public function getClientAccounts(): array
+    {
+        return $this->select('users.id, users.username, users.phone, users.is_active, COALESCE(user_balances.balance, 0) AS balance, user_balances.currency')
+            ->join('user_types', 'user_types.id = users.id_type')
+            ->join('user_balances', 'user_balances.id_user = users.id', 'left')
+            ->where('user_types.slug', 'user')
+            ->orderBy('balance', 'DESC')
+            ->findAll();
+    }
 }
+

@@ -21,27 +21,15 @@ class Dashboard extends BaseController
 
     public function index(): string
     {
-        $db = \Config\Database::connect();
-
+        $transactionModel = new \App\Models\TransactionModel();
+        
         // Gains de l'opérateur : total des frais collectés par type d'opération
-        $gains = $db->table('transactions t')
-            ->select('ot.name AS op_name, ot.slug, COUNT(t.id) AS nb_tx, SUM(t.amount) AS total_amount, SUM(t.fee_amount) AS total_fees')
-            ->join('operation_types ot', 'ot.id = t.operation_type_id')
-            ->groupBy('ot.id')
-            ->orderBy('ot.slug')
-            ->get()->getResultArray();
-
+        $gains = $transactionModel->getGainsStats();
         $totalFees = array_sum(array_column($gains, 'total_fees'));
 
         // Situation des comptes clients (utilisateurs de type 'user' avec solde)
-        $clientAccounts = $db->table('users u')
-            ->select('u.id, u.username, u.phone, u.is_active, COALESCE(ub.balance, 0) AS balance, ub.currency')
-            ->join('user_types ut', 'ut.id = u.id_type')
-            ->join('user_balances ub', 'ub.id_user = u.id', 'left')
-            ->where('ut.slug', 'user')
-            ->whereNull('u.deleted_at')
-            ->orderBy('ub.balance', 'DESC')
-            ->get()->getResultArray();
+        $clientAccounts = $this->userModel->getClientAccounts();
+
 
         return view('admin/dashboard', [
             'title'          => 'Administration',

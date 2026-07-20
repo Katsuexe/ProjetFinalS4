@@ -3,17 +3,21 @@
 namespace App\Controllers\User;
 
 use App\Controllers\BaseController;
+use App\Services\MobileMoneyService;
+use App\Models\TransactionModel;
+use App\Models\UserBalanceModel;
 
 class Operations extends BaseController
 {
-    protected $db;
     protected $userId;
     protected $phone;
+    protected $mobileMoneyService;
+    protected $transactionModel;
+    protected $balanceModel;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
-        $this->db = \Config\Database::connect();
         
         $session = session();
         $this->userId = $session->get('user_id');
@@ -25,6 +29,10 @@ class Operations extends BaseController
             exit;
         }
         
+        $this->mobileMoneyService = new MobileMoneyService();
+        $this->transactionModel   = new TransactionModel();
+        $this->balanceModel       = new UserBalanceModel();
+        
         helper(['form', 'url']);
     }
 
@@ -33,37 +41,13 @@ class Operations extends BaseController
     {
         if ($this->request->getMethod() === 'POST') {
             $amount = (float) $this->request->getPost('amount');
-            if ($amount <= 0) {
-                return redirect()->back()->with('error', 'Montant invalide.');
-            }
-
-            try {
-                $this->db->transException(true)->transStart();
-
-                // Trouver l'ID du type d'opération "deposit"
-                $opType = $this->db->table('operation_types')->where('slug', 'deposit')->get()->getRow();
-                
-                // Mettre à jour le solde
-                $this->db->table('user_balances')
-                         ->where('id_user', $this->userId)
-                         ->set('balance', 'balance + ' . $amount, false)
-                         ->update();
-                
-                // Historique
-                $this->db->table('transactions')->insert([
-                    'user_id'           => $this->userId,
-                    'recipient_id'      => null,
-                    'operation_type_id' => $opType->id,
-                    'amount'            => $amount,
-                    'fee_amount'        => 0,
-                    'created_at'        => date('Y-m-d H:i:s'),
-                ]);
-
-                $this->db->transComplete();
-                return redirect()->to('user/operations/history')->with('success', 'Dépôt effectué avec succès.');
-
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Erreur lors du dépôt.');
+            
+            $result = $this->mobileMoneyService->deposit((int) $this->userId, $amount);
+            
+            if ($result['success']) {
+                return redirect()->to('user/operations/history')->with('success', $result['message']);
+            } else {
+                return redirect()->back()->with('error', $result['message']);
             }
         }
 
@@ -77,51 +61,13 @@ class Operations extends BaseController
     {
         if ($this->request->getMethod() === 'POST') {
             $amount = (float) $this->request->getPost('amount');
-            if ($amount <= 0) {
-                return redirect()->back()->with('error', 'Montant invalide.');
-            }
-
-            try {
-                $this->db->transException(true)->transStart();
-                $opType = $this->db->table('operation_types')->where('slug', 'withdraw')->get()->getRow();
-                
-                // Calcul des frais
-                $feeScale = $this->db->table('fee_scales')
-                                     ->where('operation_type_id', $opType->id)
-                                     ->where('min_amount <=', $amount)
-                                     ->where('max_amount >=', $amount)
-                                     ->get()->getRow();
-                
-                $fee = $feeScale ? $feeScale->fee_amount : 0;
-                $totalToDeduct = $amount + $fee;
-
-                // Vérifier le solde
-                $balanceRow = $this->db->table('user_balances')->where('id_user', $this->userId)->get()->getRow();
-                if (!$balanceRow || $balanceRow->balance < $totalToDeduct) {
-                    throw new \Exception('Solde insuffisant (incluant ' . $fee . ' Ar de frais).');
-                }
-
-                // Mettre à jour le solde
-                $this->db->table('user_balances')
-                         ->where('id_user', $this->userId)
-                         ->set('balance', 'balance - ' . $totalToDeduct, false)
-                         ->update();
-
-                // Historique
-                $this->db->table('transactions')->insert([
-                    'user_id'           => $this->userId,
-                    'recipient_id'      => null,
-                    'operation_type_id' => $opType->id,
-                    'amount'            => $amount,
-                    'fee_amount'        => $fee,
-                    'created_at'        => date('Y-m-d H:i:s'),
-                ]);
-
-                $this->db->transComplete();
-                return redirect()->to('user/operations/history')->with('success', "Retrait de {$amount} Ar effectué. Frais: {$fee} Ar.");
-
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', $e->getMessage());
+            
+            $result = $this->mobileMoneyService->withdraw((int) $this->userId, $amount);
+            
+            if ($result['success']) {
+                return redirect()->to('user/operations/history')->with('success', $result['message']);
+            } else {
+                return redirect()->back()->with('error', $result['message']);
             }
         }
 
@@ -134,66 +80,19 @@ class Operations extends BaseController
     public function transfer()
     {
         if ($this->request->getMethod() === 'POST') {
-            $amount = (float) $this->request->getPost('amount');
+            $amount         = (float) $this->request->getPost('amount');
             $recipientPhone = $this->request->getPost('recipient_phone');
             
-            if ($amount <= 0 || empty($recipientPhone) || $recipientPhone === $this->phone) {
+            if (empty($recipientPhone)) {
                 return redirect()->back()->with('error', 'Informations de transfert invalides.');
             }
-
-            try {
-                $this->db->transException(true)->transStart();
-                $opType = $this->db->table('operation_types')->where('slug', 'transfer')->get()->getRow();
-                
-                // Chercher le destinataire
-                $recipient = $this->db->table('users')->where('phone', $recipientPhone)->get()->getRow();
-                if (!$recipient) {
-                    throw new \Exception('Numéro de destinataire introuvable.');
-                }
-
-                // Calcul des frais
-                $feeScale = $this->db->table('fee_scales')
-                                     ->where('operation_type_id', $opType->id)
-                                     ->where('min_amount <=', $amount)
-                                     ->where('max_amount >=', $amount)
-                                     ->get()->getRow();
-                
-                $fee = $feeScale ? $feeScale->fee_amount : 0;
-                $totalToDeduct = $amount + $fee;
-
-                // Vérifier le solde
-                $balanceRow = $this->db->table('user_balances')->where('id_user', $this->userId)->get()->getRow();
-                if (!$balanceRow || $balanceRow->balance < $totalToDeduct) {
-                    throw new \Exception('Solde insuffisant (incluant ' . $fee . ' Ar de frais).');
-                }
-
-                // 1. Débiter l'envoyeur
-                $this->db->table('user_balances')
-                         ->where('id_user', $this->userId)
-                         ->set('balance', 'balance - ' . $totalToDeduct, false)
-                         ->update();
-
-                // 2. Créditer le destinataire
-                $this->db->table('user_balances')
-                         ->where('id_user', $recipient->id)
-                         ->set('balance', 'balance + ' . $amount, false)
-                         ->update();
-
-                // 3. Historique
-                $this->db->table('transactions')->insert([
-                    'user_id'           => $this->userId,
-                    'recipient_id'      => $recipient->id,
-                    'operation_type_id' => $opType->id,
-                    'amount'            => $amount,
-                    'fee_amount'        => $fee,
-                    'created_at'        => date('Y-m-d H:i:s'),
-                ]);
-
-                $this->db->transComplete();
-                return redirect()->to('user/operations/history')->with('success', "Transfert de {$amount} Ar vers {$recipientPhone} réussi. Frais: {$fee} Ar.");
-
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', $e->getMessage());
+            
+            $result = $this->mobileMoneyService->transfer((int) $this->userId, $recipientPhone, $amount);
+            
+            if ($result['success']) {
+                return redirect()->to('user/operations/history')->with('success', $result['message']);
+            } else {
+                return redirect()->back()->with('error', $result['message']);
             }
         }
 
@@ -205,23 +104,13 @@ class Operations extends BaseController
     // ─── HISTORIQUE ─────────────────────────────────────────────────────────
     public function history()
     {
-        $transactions = $this->db->table('transactions')
-            ->select('transactions.*, op.name as op_name, r.phone as recipient_phone, u.phone as sender_phone')
-            ->join('operation_types op', 'op.id = transactions.operation_type_id')
-            ->join('users u', 'u.id = transactions.user_id')
-            ->join('users r', 'r.id = transactions.recipient_id', 'left')
-            ->where('transactions.user_id', $this->userId)
-            ->orWhere('transactions.recipient_id', $this->userId)
-            ->orderBy('transactions.created_at', 'DESC')
-            ->get()->getResultArray();
-
-        // Récupérer le solde actuel pour l'afficher en haut de l'historique
-        $balance = $this->db->table('user_balances')->where('id_user', $this->userId)->get()->getRowArray();
+        $transactions = $this->transactionModel->getUserHistory((int) $this->userId);
+        $balanceRow   = $this->balanceModel->where('id_user', $this->userId)->first();
 
         return view('user/operations/history', [
             'title'        => 'Historique et Solde',
             'transactions' => $transactions,
-            'balance'      => $balance['balance'] ?? 0,
+            'balance'      => $balanceRow ? $balanceRow['balance'] : 0,
             'userId'       => $this->userId,
         ]);
     }
