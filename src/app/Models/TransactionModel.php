@@ -60,5 +60,25 @@ class TransactionModel extends Model
             ->orderBy('operation_types.slug')
             ->findAll();
     }
+    public function getGainsStatsV2(): array
+    {
+        // Gains internes (dépôt, retrait, transfert interne) : frais barème uniquement
+        $internal = $this->select('operation_types.name AS libelle, SUM(transactions.fee_amount) as total_frais')
+            ->join('operation_types', 'operation_types.id = transactions.operation_type_id')
+            ->where('transactions.external_operator_id', null)
+            ->groupBy('operation_types.id')
+            ->findAll();
+
+        // Gains externes : frais barème + commission, groupés PAR OPÉRATEUR EXTERNE
+        $external = $this->select('external_operators.nom,
+                SUM(transactions.fee_amount) as total_frais,
+                SUM(transactions.commission_amount) as total_commission')
+            ->join('external_operators', 'external_operators.id = transactions.external_operator_id')
+            ->where('transactions.external_operator_id !=', null)
+            ->groupBy('external_operators.id')
+            ->findAll();
+
+        return ['internal' => $internal, 'external' => $external];
+    }
 }
 

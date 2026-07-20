@@ -106,10 +106,14 @@ class Dashboard extends BaseController
             return redirect()->to('/admin/users')->with('error', "Vous n'avez pas la permission de créer des utilisateurs.");
         }
 
+        // Determine default user type (slug 'user') for simple creators
+        $defaultType = $this->typeModel->findBySlug('user');
+        $defaultTypeId = $defaultType['id'] ?? null;
         return view('admin/users/create', [
-            'title'     => 'Nouvel utilisateur',
-            'pageTitle' => 'Créer un utilisateur',
-            'types'     => $this->typeModel->findAll(),
+            'title'          => 'Nouvel utilisateur',
+            'pageTitle'      => 'Créer un utilisateur',
+            'types'          => $this->typeModel->findAll(),
+            'defaultUserId'  => $defaultTypeId,
         ]);
     }
 
@@ -119,16 +123,24 @@ class Dashboard extends BaseController
             return redirect()->to('/admin/users')->with('error', "Vous n'avez pas la permission de créer des utilisateurs.");
         }
 
+        $idType = (int) $this->request->getPost('id_type');
+
+        // Validation dynamic selon le type d'utilisateur
+        $simpleType = $this->typeModel->findBySlug('user');
+        $simpleId   = $simpleType['id'] ?? null;
+        $isSimple   = ($idType == $simpleId);
         $rules = [
-            'username'         => 'required|min_length[3]|max_length[100]',
-            'email'            => 'required|valid_email|is_unique[users.email]',
-            'password'         => 'required|min_length[8]',
-            'password_confirm' => 'required|matches[password]',
-            'id_type'          => 'required|is_natural_no_decimal',
+            'username' => 'required|min_length[3]|max_length[100]',
+            'email'    => $isSimple ? 'permit_empty|valid_email|is_unique[users.email]' : 'required|valid_email|is_unique[users.email]',
+            'phone'    => $isSimple ? 'required|min_length[10]|max_length[20]|is_unique[users.phone]' : 'permit_empty|min_length[10]|max_length[20]|is_unique[users.phone]',
+            'password' => $isSimple ? 'permit_empty|min_length[8]' : 'required|min_length[8]',
+            'password_confirm' => $isSimple ? 'permit_empty|matches[password]' : 'required|matches[password]',
+            'id_type'  => 'required|is_natural_no_decimal',
         ];
         $messages = [
-            'email'            => ['is_unique' => 'Cet email est déjà utilisé.'],
-            'password_confirm' => ['matches'   => 'Les mots de passe ne correspondent pas.'],
+            'email' => ['is_unique' => 'Cet email est déjà utilisé.'],
+            'phone' => ['is_unique' => 'Ce numéro de téléphone est déjà utilisé.'],
+            'password_confirm' => ['matches' => 'Les mots de passe ne correspondent pas.'],
         ];
 
         if (! $this->validate($rules, $messages)) {
@@ -141,9 +153,15 @@ class Dashboard extends BaseController
             $idType      = $defaultType['id'] ?? $idType;
         }
 
+        // Si c'est un compte "user" normal, le téléphone doit être fourni (requis métier pour Mobile Money)
+        if ($idType == 3 && empty($this->request->getPost('phone'))) {
+            return redirect()->back()->withInput()->with('error', 'Le numéro de téléphone est obligatoire pour un compte utilisateur (Mobile Money).');
+        }
+
         $this->userModel->insert([
             'username'  => $this->request->getPost('username'),
             'email'     => $this->request->getPost('email'),
+            'phone'     => $this->request->getPost('phone') ?: null,
             'password'  => $this->userModel->hashPassword($this->request->getPost('password')),
             'id_type'   => $idType,
             'is_active' => 1,

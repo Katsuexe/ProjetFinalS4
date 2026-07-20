@@ -129,9 +129,17 @@ INSERT INTO `user_balances` (`id_user`, `balance`, `currency`, `updated_at`) VAL
 INSERT INTO `operator_prefixes` (`prefix`, `created_at`, `updated_at`) VALUES
 ('032', '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
 ('033', '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
-('034', '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
-('037', '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
-('038', '2026-07-20 10:00:00', '2026-07-20 10:00:00');
+('034', '2026-07-20 10:00:00', '2026-07-20 10:00:00');
+
+-- Opérateurs externes (V2)
+INSERT INTO `external_operators` (`id`, `nom`, `commission_pourcentage`, `created_at`) VALUES
+(1, 'Orange Money', 2.00, '2026-07-20 10:00:00'),
+(2, 'Airtel Money', 2.50, '2026-07-20 10:00:00');
+
+-- Préfixes opérateurs externes (V2)
+INSERT INTO `external_operator_prefixes` (`external_operator_id`, `prefix`) VALUES
+(1, '037'),
+(2, '038');
 
 -- Types d'opérations
 INSERT INTO `operation_types` (`id`, `name`, `slug`) VALUES

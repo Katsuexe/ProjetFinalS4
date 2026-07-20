@@ -38,7 +38,7 @@ class Filters extends BaseFilters
         'before' => ['forcehttps', 'pagecache'],
         'after'  => ['pagecache', 'performance', 'toolbar'],
     ];
-    public array $globals = ['before' => [], 'after' => []];
+    public array $globals = ['before' => ['csrf'], 'after' => []];
     public array $methods = [];
     public array $filters = [];
 }

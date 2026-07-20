@@ -39,15 +39,23 @@
                 <input type="text" id="username" name="username" value="<?= esc(old('username')) ?>" required>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="email_group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" value="<?= esc(old('email')) ?>" required>
+                <span class="form__error" id="email_error"></span>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="phone_group">
+                <label for="phone">Numéro de téléphone (obligatoire pour compte User)</label>
+                <input type="text" id="phone" name="phone" value="<?= esc(old('phone')) ?>" placeholder="ex: 0321234567">
+                <span class="form__error" id="phone_error"></span>
+            </div>
+
+            <div class="form-group" id="password_group">
                 <label for="password">Mot de passe</label>
                 <input type="password" id="password" name="password" required>
                 <small>8 caractères minimum.</small>
+                <span class="form__error" id="password_error"></span>
             </div>
 
             <div class="form-group">
@@ -56,14 +64,18 @@
             </div>
 
             <?php if (has_permission('users.manage')): ?>
-            <div class="form-group">
-                <label for="id_type">Type</label>
-                <select id="id_type" name="id_type" required>
-                    <?php foreach ($types as $t): ?>
-                        <option value="<?= esc($t['id']) ?>"><?= esc($t['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                        <?php if (has_permission('users.manage')): ?>
+                <div class="form-group">
+                    <label for="id_type">Type</label>
+                    <select id="id_type" name="id_type" data-simple-id="<?= $defaultUserId ?? '' ?>" required>
+                        <?php foreach ($types as $t): ?>
+                            <option value="<?= esc($t['id']) ?>" <?= ((int) ($defaultUserId ?? $t['id']) === (int) $t['id']) ? 'selected' : '' ?>><?= esc($t['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php else: ?>
+                <input type="hidden" name="id_type" value="<?= esc($defaultUserId ?? '') ?>">
+            <?php endif; ?>
             <?php else: ?>
                 <input type="hidden" name="id_type" value="">
                 <p class="form-hint">Le compte sera créé avec le type "Utilisateur" par défaut.</p>
@@ -74,6 +86,10 @@
             <button type="submit" class="btn btn--primary">Créer</button>
             <a href="<?= base_url('admin/users') ?>" class="btn btn--outline">Annuler</a>
         </div>
+        <p class="text-muted" style="margin-top:1rem;">
+            <a href="<?= base_url('admin/import') ?>">Importer des utilisateurs via CSV</a>
+        </p>
+        <script src="/js/users_form.js"></script>
     </form>
 </div>
 

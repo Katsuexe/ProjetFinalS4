@@ -27,9 +27,10 @@
 
 <!-- ============================ BLOC 1 : IMPORT CSV ============================ -->
 <div class="card" style="margin-bottom:1.5rem;">
-    <h3>1. Import CSV</h3>
-    <p>
-        Fichier attendu : colonnes <code>username,email,password,id_type</code>.
+    <div class="card__body">
+        <h3>1. Import CSV</h3>
+        <p>
+            Fichier attendu : colonnes <code>username,email,password,id_type</code>.
         <a href="<?= base_url('admin/import/template') ?>">Télécharger un modèle</a>.
     </p>
 
@@ -80,14 +81,18 @@
             </a>
         </div>
     <?php endif; ?>
+    </div>
 </div>
 
 <!-- ============================ BLOC 2 : IMPORT EXCEL ============================ -->
 <div class="card" style="margin-bottom:1.5rem;">
-    <h3>2. Import Excel (.xlsx)</h3>
-    <p>Mêmes colonnes que le CSV, mais dans un classeur Excel.</p>
+    <div class="card__header">
+        <span class="card__title">2. Import Excel (.xlsx)</span>
+    </div>
+    <div class="card__body">
+        <p>Mêmes colonnes que le CSV, mais dans un classeur Excel.</p>
 
-    <form action="<?= base_url('admin/import/import-excel') ?>" method="post" enctype="multipart/form-data">
+        <form action="<?= base_url('admin/import/import-excel') ?>" method="post" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <div class="form-group">
             <label for="excel">Fichier Excel</label>
@@ -95,15 +100,20 @@
         </div>
         <button type="submit" class="btn btn--primary">Importer</button>
     </form>
+    </div>
 </div>
 
 <!-- ============================ BLOC 3 : EXPORT EXCEL ============================ -->
 <div class="card">
-    <h3>3. Export Excel</h3>
-    <p>Télécharge la liste actuelle des utilisateurs au format .xlsx.</p>
+    <div class="card__header">
+        <span class="card__title">3. Export Excel</span>
+    </div>
+    <div class="card__body">
+        <p>Télécharge la liste actuelle des utilisateurs au format .xlsx.</p>
     <a href="<?= base_url('admin/import/export-excel') ?>" class="btn btn--secondary">
         Télécharger utilisateurs.xlsx
     </a>
+    </div>
 </div>
 
 <?= $this->endSection() ?>
