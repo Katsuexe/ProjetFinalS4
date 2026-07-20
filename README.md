@@ -1,62 +1,68 @@
-# Projet PHP / CodeIgniter 4
+# ProjetFinalS4 — CodeIgniter 4 Starter
 
-Ce dépôt contient un projet PHP basé sur CodeIgniter 4. Il utilise des vues PHP directes et ne dépend pas de Node.js pour l'automatisation ou le build.
-## Installation
+Ce dépôt contient le projet basé sur CodeIgniter 4. L'application intègre un système d'authentification, une gestion des rôles (Admin, User, Moderator), et une base de données avec des migrations/seeders prêts à l'emploi.
 
-1. Aller dans le dossier `src` :
+## 🚀 Installation & Setup
 
+1. **Cloner et préparer le dossier `src`** :
+   Le code applicatif se trouve dans le sous-dossier `src/`.
    ```bash
    cd src
    ```
-2. Installer les dépendances PHP :
 
+2. **Installer les dépendances PHP** :
    ```bash
    composer install
    ```
-3. Copier le fichier d'environnement :
 
+3. **Configurer l'environnement** :
+   Copier le fichier template vers `.env` :
    ```bash
-   copy env .env
+   cp env .env
    ```
+   **Important** : Ouvrez `.env` et configurez vos accès à la base de données (`database.default.hostname`, `database.default.database`, `database.default.username`, `database.default.password`) ainsi que l'URL (`app.baseURL = 'http://localhost:8080'`).
 
-   puis adapter les valeurs de base de données et l'URL.
-4. Lancer les migrations et, si nécessaire, les seeds :
-
+4. **Migrations et Seeders** :
+   Générez les tables et insérez les données par défaut (incluant les permissions, types d'utilisateurs et comptes de test).
    ```bash
    php spark migrate
-   php spark db:seed DatabaseSeeder
+   php spark db:seed MainSeeder
    ```
-5. Démarrer le serveur de développement :
 
+5. **Démarrer le serveur local** :
    ```bash
    php spark serve
    ```
-
-## Points importants
-
-- Ne jamais committer le fichier `.env`.
-- `src/composer.json` est le fichier de dépendances PHP.
-- Les vues sont rendues directement en PHP, sans build JavaScript.
-
-## Recommandations Git
-
-- Vérifier que `.gitignore` contient bien :
-
-  - `/vendor/`
-  - `/writable/`
-  - `.env`
-  - `.vscode/`
-- Utiliser `.gitattributes` pour normaliser les fins de ligne.
-- Utiliser `.editorconfig` pour uniformiser l'indentation.
-
-## Structure utile
-
-- `src/app/` : code applicatif PHP
-- `src/public/` : point d'entrée web, CSS, JS statique
-- `src/database/` : migrations et seeds
-- `src/env` : modèle d'environnement
-
-
-
+   L'application sera accessible sur `http://localhost:8080`.
 
 ---
+
+## 🔐 Comptes de test (après Seed)
+
+Le seeder `MainSeeder` crée 3 comptes de test, tous avec le mot de passe **`password123`** :
+
+- **Admin** : `admin@example.com`
+- **Modérateur** : `mod@example.com`
+- **Utilisateur** : `user@example.com`
+
+---
+
+## 📦 Dépendances optionnelles (Import / Export)
+
+Certaines fonctionnalités d'export nécessitent des bibliothèques externes. Si vous devez travailler sur l'export Excel ou PDF, exécutez ces commandes depuis le dossier `src` :
+
+```bash
+# Pour l'export Excel (ExcelService)
+composer require phpoffice/phpspreadsheet
+
+# Pour l'export PDF (PdfService)
+composer require dompdf/dompdf
+```
+
+---
+
+## 🛠️ Organisation du travail
+
+- **Fichier TODO** : Consultez le fichier [`TODO.md`](../TODO.md) à la racine pour voir l'état d'avancement, les tâches prioritaires et les bugs connus.
+- Ne commitez **jamais** le fichier `.env` ou le dossier `src/writable/`.
+- Les vues utilisent du HTML/CSS pur. Le fichier CSS principal est dans `src/public/assets/css/app.css`.
