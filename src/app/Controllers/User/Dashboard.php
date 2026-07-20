@@ -21,21 +21,30 @@ class Dashboard extends BaseController
 
     public function index(): string
     {
-        $data = [
-            'title'     => 'Mon espace',
-            'pageTitle' => 'Tableau de bord',
-        ];
+        $db  = \Config\Database::connect();
+        $uid = (int) session('user_id');
 
-        if (has_permission('wallet.view')) {
-            $row = $this->balanceModel->findByUser((int) session('user_id'));
+        // Solde — affiché pour tous les clients Mobile Money
+        $row = $db->table('user_balances')->where('id_user', $uid)->get()->getRowArray();
 
-            $data['balance']            = $row['balance'] ?? 0;
-            $data['balance_updated_at'] = $row
-                ? date('d/m/Y H:i', strtotime($row['updated_at']))
-                : null;
-        }
+        // Dernières transactions (5)
+        $recentTx = $db->table('transactions')
+            ->select('transactions.amount, transactions.fee_amount, transactions.created_at, op.name AS op_name')
+            ->join('operation_types op', 'op.id = transactions.operation_type_id')
+            ->where('transactions.user_id', $uid)
+            ->orWhere('transactions.recipient_id', $uid)
+            ->orderBy('transactions.created_at', 'DESC')
+            ->limit(5)
+            ->get()->getResultArray();
 
-        return view('user/dashboard', $data);
+        return view('user/dashboard', [
+            'title'              => 'Mon espace',
+            'pageTitle'          => 'Tableau de bord',
+            'balance'            => $row['balance'] ?? 0,
+            'currency'           => $row['currency'] ?? 'Ar',
+            'balance_updated_at' => $row ? date('d/m/Y H:i', strtotime($row['updated_at'])) : null,
+            'recent_transactions'=> $recentTx,
+        ]);
     }
 
     public function profile(): string

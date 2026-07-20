@@ -21,21 +21,49 @@ class Auth extends BaseController
     // ─── GET /login ─────────────────────────────────────────────────────────
     public function login(): string
     {
-        return view('auth/login', ['title' => 'Connexion']);
+        return view('auth/login', [
+            'title' => 'Connexion',
+            'mode'  => 'phone',
+        ]);
     }
 
     // ─── POST /login ────────────────────────────────────────────────────────
     public function loginProcess()
     {
-        $loginId = $this->request->getPost('login_id');
-        $password = $this->request->getPost('password');
+        $loginId   = trim($this->request->getPost('login_id') ?? '');
+        $loginMode = $this->request->getPost('login_mode'); // 'admin' si formulaire admin
 
-        // Détection si c'est un numéro de téléphone (seulement des chiffres, ex: 0331234567)
-        if (preg_match('/^[0-9]{10}$/', $loginId)) {
-            return $this->handlePhoneLogin($loginId);
+        // ── Mode admin (formulaire email/mot de passe) ───────────────────────
+        if ($loginMode === 'admin') {
+            return $this->handleAdminLogin($loginId);
         }
 
-        // Sinon, c'est une connexion par email classique (Admin/Modo)
+        // ── Numéro secret → afficher le formulaire admin ─────────────────────
+        $secretNumber = getenv('app.adminSecretNumber');
+        if ($secretNumber && $loginId === $secretNumber) {
+            return view('auth/login', [
+                'title' => 'Connexion opérateur',
+                'mode'  => 'admin',
+            ]);
+        }
+
+        // ── Connexion client par numéro de téléphone ─────────────────────────
+        if (!preg_match('/^\d{10}$/', $loginId)) {
+            return view('auth/login', [
+                'title'  => 'Connexion',
+                'mode'   => 'phone',
+                'errors' => ['login_id' => 'Veuillez entrer un numéro de téléphone valide (10 chiffres).'],
+            ]);
+        }
+
+        return $this->handlePhoneLogin($loginId);
+    }
+
+    // ─── Connexion admin/modo par email + mot de passe ───────────────────────
+    private function handleAdminLogin(string $email)
+    {
+        $password = $this->request->getPost('password');
+
         $rules = [
             'login_id' => 'required|valid_email',
             'password' => 'required|min_length[6]',
@@ -43,16 +71,18 @@ class Auth extends BaseController
 
         if (! $this->validate($rules)) {
             return view('auth/login', [
-                'title'  => 'Connexion',
+                'title'  => 'Connexion opérateur',
+                'mode'   => 'admin',
                 'errors' => $this->validator->getErrors(),
             ]);
         }
 
-        $user = $this->userModel->authenticate($loginId, $password);
+        $user = $this->userModel->authenticate($email, $password);
 
         if (! $user) {
             return view('auth/login', [
-                'title'  => 'Connexion',
+                'title'  => 'Connexion opérateur',
+                'mode'   => 'admin',
                 'errors' => ['login_id' => 'Email ou mot de passe incorrect.'],
             ]);
         }
@@ -66,35 +96,37 @@ class Auth extends BaseController
         return redirect()->to('/user/dashboard');
     }
 
+    // ─── Connexion client par numéro de téléphone ────────────────────────────
     private function handlePhoneLogin(string $phone)
     {
-        // 1. Vérifier si le préfixe est valide
         $prefix = substr($phone, 0, 3);
-        $db = \Config\Database::connect();
+        $db     = \Config\Database::connect();
+
+        // Vérifier que le préfixe est opéré
         $validPrefix = $db->table('operator_prefixes')->where('prefix', $prefix)->get()->getRow();
 
         if (! $validPrefix) {
             return view('auth/login', [
                 'title'  => 'Connexion',
-                'errors' => ['login_id' => 'Le préfixe du numéro de téléphone n\'est pas supporté (ex: 033, 034).'],
+                'mode'   => 'phone',
+                'errors' => ['login_id' => 'Ce préfixe n\'est pas pris en charge (033, 034, 037, 038...).'],
             ]);
         }
 
-        // 2. Trouver l'utilisateur ou le créer
+        // Chercher ou créer l'utilisateur
         $user = $this->userModel->where('phone', $phone)->first();
 
         if (! $user) {
             $defaultType = $this->userTypeModel->findBySlug('user');
-            
-            // Création de l'utilisateur
+
             $userId = $this->userModel->insert([
                 'username'  => 'Client ' . $phone,
                 'phone'     => $phone,
                 'id_type'   => $defaultType['id'] ?? null,
                 'is_active' => 1,
             ]);
-            
-            // Création de la balance (0 Ar par défaut)
+
+            // Créer le solde initial (0 Ar)
             $db->table('user_balances')->insert([
                 'id_user'    => $userId,
                 'balance'    => 0,
@@ -102,28 +134,27 @@ class Auth extends BaseController
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
 
-            // Recharger l'utilisateur (pour withType et autres join si on utilisait find)
             $user = $this->userModel->find($userId);
         }
 
-        // 3. Charger manuellement les relations nécessaires pour la session (comme authenticate)
+        // Enrichir avec type + permissions pour la session
         $userType = $this->userTypeModel->find($user['id_type']);
-        $perms = $db->table('user_type_permissions')
+        $perms    = $db->table('user_type_permissions')
             ->select('permissions.slug')
             ->join('permissions', 'permissions.id = user_type_permissions.id_permission')
             ->where('id_type', $user['id_type'])
             ->get()->getResultArray();
-            
-        $user['type_slug'] = $userType['slug'] ?? '';
-        $user['type_name'] = $userType['name'] ?? '';
+
+        $user['type_slug']   = $userType['slug'] ?? '';
+        $user['type_name']   = $userType['name'] ?? '';
         $user['permissions'] = array_column($perms, 'slug');
 
         $this->startSession($user);
-
         return redirect()->to('/user/dashboard');
     }
 
-    private function startSession(array $user)
+    // ─── Initialiser la session ──────────────────────────────────────────────
+    private function startSession(array $user): void
     {
         session()->set([
             'isLoggedIn'     => true,
@@ -136,8 +167,7 @@ class Auth extends BaseController
             'user_type_name' => $user['type_name'],
             'permissions'    => $user['permissions'],
         ]);
-        
-        // Update last login
+
         $this->userModel->update($user['id'], ['last_login' => date('Y-m-d H:i:s')]);
     }
 
@@ -152,14 +182,13 @@ class Auth extends BaseController
     {
         $rules = [
             'username'         => 'required|min_length[3]|max_length[100]',
-            'email'            => 'required|valid_email|is_unique[users.email]',
+            'email'            => 'required|valid_email',
             'password'         => 'required|min_length[8]',
             'password_confirm' => 'required|matches[password]',
         ];
 
         $messages = [
-            'email'            => ['is_unique' => 'Cet email est déjà utilisé.'],
-            'password_confirm' => ['matches'   => 'Les mots de passe ne correspondent pas.'],
+            'password_confirm' => ['matches' => 'Les mots de passe ne correspondent pas.'],
         ];
 
         if (! $this->validate($rules, $messages)) {
@@ -169,7 +198,6 @@ class Auth extends BaseController
             ]);
         }
 
-        // Récupérer le type 'user' par défaut via le Model (Query Builder)
         $defaultType = $this->userTypeModel->findBySlug('user');
 
         $this->userModel->insert([
