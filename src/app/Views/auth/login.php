@@ -95,15 +95,13 @@
                 value="<?= old('login_id') ?>"
                 autocomplete="tel"
                 inputmode="numeric"
-                pattern="^(032|033|034|037|038)[0-9]{7}$"
+                pattern="[0-9]{10}"
                 minlength="10"
                 maxlength="10"
                 required
             >
             <label for="login_id" class="form__label">Numéro de téléphone</label>
         </div>
-        
-        <div id="phone_status" style="font-size:0.85rem; margin-top:-0.5rem; margin-bottom:1rem; min-height:1.2em;"></div>
 
 
         <input type="submit" class="form__button" value="Se connecter">
@@ -111,56 +109,5 @@
     <?php endif; ?>
 
 </form>
-
-<?php if ($mode === 'phone'): ?>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const phoneInput = document.getElementById('login_id');
-    const statusDiv = document.getElementById('phone_status');
-    const submitBtn = document.querySelector('input[type="submit"]');
-
-    if (phoneInput && phoneInput.type === 'tel') {
-        const secretNumber = '<?= esc(getenv('app.adminSecretNumber') ?: '0330000000') ?>';
-
-        phoneInput.addEventListener('input', function() {
-            const val = phoneInput.value.trim();
-            const regex = /^(032|033|034|037|038)[0-9]{7}$/;
-
-            if (val.length === 10) {
-                if (val === secretNumber) {
-                    statusDiv.innerHTML = '<span style="color:var(--success);"></span>';
-                    return;
-                }
-
-                if (regex.test(val)) {
-                    // Appel AJAX
-                    fetch(`<?= base_url('auth/check-phone') ?>?phone=${val}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.valid) {
-                                if (data.exists) {
-                                    statusDiv.innerHTML = '<span style="color:var(--success);">✅ Compte existant trouvé.</span>';
-                                } else {
-                                    statusDiv.innerHTML = '<span style="color:var(--danger);">❌ Ce numéro n\'existe pas.</span>';
-                                }
-                            } else {
-                                statusDiv.innerHTML = '<span style="color:var(--danger);">❌ Format de numéro invalide.</span>';
-                            }
-                        })
-                        .catch(err => {
-                            statusDiv.innerHTML = '';
-                        });
-                } else {
-                    statusDiv.innerHTML = '<span style="color:var(--danger);">❌ L\'opérateur n\'est pas pris en charge (032, 033, 034, 037, 038).</span>';
-                }
-            } else {
-                statusDiv.innerHTML = ''; // Effacer si < 10 caractères
-            }
-        });
-    }
-});
-</script>
-<?php endif; ?>
-
 <?= $this->endSection() ?>
 

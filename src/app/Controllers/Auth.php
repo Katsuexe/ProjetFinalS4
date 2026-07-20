@@ -18,22 +18,6 @@ class Auth extends BaseController
         helper(['auth', 'url', 'form']);
     }
 
-    // ─── API /auth/check-phone ──────────────────────────────────────────────
-    public function checkPhone()
-    {
-        $phone = $this->request->getGet('phone');
-        
-        if (!$phone || !preg_match('/^(032|033|034|037|038)[0-9]{7}$/', $phone)) {
-            return $this->response->setJSON(['valid' => false, 'exists' => false]);
-        }
-
-        $user = $this->userModel->where('phone', $phone)->first();
-        return $this->response->setJSON([
-            'valid' => true,
-            'exists' => $user !== null
-        ]);
-    }
-
     // ─── GET /login ─────────────────────────────────────────────────────────
     public function login(): string
     {
@@ -125,7 +109,7 @@ class Auth extends BaseController
             return view('auth/login', [
                 'title'  => 'Connexion',
                 'mode'   => 'phone',
-                'errors' => ['login_id' => 'Ce préfixe n\'est pas pris en charge (032, 033, 034, 037, 038).'],
+                'errors' => ['login_id' => 'Numéro de téléphone non autorisé.'],
             ]);
         }
 
