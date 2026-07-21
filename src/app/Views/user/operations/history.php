@@ -79,13 +79,13 @@
                     
                     $external_badge = '';
                     if ($isTransfer && $isSender && !empty($tx['external_operator_id'])) {
-                        $external_badge = ' <span class="badge badge--orange" style="background:#d97706; font-size:0.7rem;">' . esc($tx['external_operator_name'] ?? 'Externe') . '</span>';
+                        $external_badge = ' <span class="badge badge--orange">' . esc($tx['external_operator_name'] ?? 'Externe') . '</span>';
                     }
                 ?>
                 <tr>
                     <td><?= $tx['created_at'] ? date('d/m/Y H:i', strtotime($tx['created_at'])) : '—' ?></td>
                     <td><span class="badge badge--blue"><?= esc($tx['op_name']) ?></span></td>
-                    <td style="font-weight:600;color:var(--<?= $color === 'green' ? 'success' : 'danger' ?>);">
+                    <td style="font-weight:600;color:var(--<?= $color === 'green' ? 'success-color' : 'danger-color' ?>);">
                         <?= $sign ?><?= number_format($tx['amount'], 2, ',', ' ') ?>
                     </td>
                     <td style="color:var(--text-muted);">
@@ -107,8 +107,6 @@
         </table>
     </div>
     <?php endif; ?>
-</div>
-
 </div>
 
 <script>

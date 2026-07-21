@@ -104,7 +104,7 @@ class Operations extends BaseController
             case 'transfert_multiple':
                 $recipientPhones = $this->request->getPost('recipient_phones'); // Array
                 $recipientAmounts = $this->request->getPost('recipient_amounts'); // Array
-                $includeWithdrawFee = (bool) $this->request->getPost('include_withdraw_fee_multiple');
+                $recipientIncludeWithdrawFees = $this->request->getPost('recipient_include_withdraw_fees'); // Array (1 = inclure, 0 = ne pas inclure), un par destinataire
                 
                 if (empty($recipientPhones) || !is_array($recipientPhones) || empty($recipientAmounts) || !is_array($recipientAmounts)) {
                     return redirect()->back()->with('error', 'Veuillez ajouter au moins un destinataire et un montant.');
@@ -113,12 +113,13 @@ class Operations extends BaseController
                 $recipientsData = [];
                 foreach ($recipientPhones as $i => $phone) {
                     $recipientsData[] = [
-                        'phone'  => $phone,
-                        'amount' => (float) ($recipientAmounts[$i] ?? 0)
+                        'phone'                => $phone,
+                        'amount'               => (float) ($recipientAmounts[$i] ?? 0),
+                        'include_withdraw_fee' => !empty($recipientIncludeWithdrawFees[$i]) && $recipientIncludeWithdrawFees[$i] !== '0',
                     ];
                 }
                 
-                $result = $this->mobileMoneyService->transferMultiple($this->phone, $recipientsData, $includeWithdrawFee);
+                $result = $this->mobileMoneyService->transferMultiple($this->phone, $recipientsData);
                 break;
                 
             default:
@@ -149,7 +150,7 @@ class Operations extends BaseController
         }
 
         if ($resolution['type'] === 'unknown') {
-            return $this->response->setJSON(['error' => 'Numéro invalide ou opérateur non reconnu.']);
+            return $this->response->setJSON(['error' => 'Numéro invalide ou opérateur non reconnu.', 'csrf_hash' => csrf_hash()]);
         }
 
         $breakdown = $calculator->computeTransfer(
@@ -159,6 +160,7 @@ class Operations extends BaseController
         );
 
         $breakdown['is_external'] = $resolution['type'] === 'external';
+        $breakdown['csrf_hash'] = csrf_hash();
 
         return $this->response->setJSON($breakdown);
     }
@@ -174,7 +176,8 @@ class Operations extends BaseController
         return $this->response->setJSON([
             'amount' => $amount,
             'fee' => $fee,
-            'total_debit' => $amount + $fee
+            'total_debit' => $amount + $fee,
+            'csrf_hash' => csrf_hash()
         ]);
     }
 
@@ -182,10 +185,10 @@ class Operations extends BaseController
     {
         $phones = $this->request->getPost('phones');
         $amounts = $this->request->getPost('amounts');
-        $includeWithdrawFee = $this->request->getPost('include_withdraw_fee') === 'true' || $this->request->getPost('include_withdraw_fee') === '1';
+        $includeWithdrawFees = $this->request->getPost('include_withdraw_fees'); // Array, un par destinataire
         
         if (empty($phones) || empty($amounts)) {
-            return $this->response->setJSON(['error' => 'Données invalides.']);
+            return $this->response->setJSON(['error' => 'Données invalides.', 'csrf_hash' => csrf_hash()]);
         }
 
         $calculator = new FeeCalculatorService();
@@ -199,9 +202,11 @@ class Operations extends BaseController
             $amt = (float) ($amounts[$i] ?? 0);
             if ($amt <= 0) continue;
 
+            $includeFee = !empty($includeWithdrawFees[$i]) && $includeWithdrawFees[$i] !== '0';
+
             $resolution = $calculator->resolveOperator($phone);
             if ($resolution['type'] !== 'unknown') {
-                $bd = $calculator->computeTransfer($amt, $resolution['external_operator_id'], $includeWithdrawFee);
+                $bd = $calculator->computeTransfer($amt, $resolution['external_operator_id'], $includeFee);
                 $totalTransferFee += $bd['transfer_fee'];
                 $totalCommission += $bd['commission'];
                 $totalWithdrawFee += $bd['withdraw_fee_eq'];
@@ -215,7 +220,8 @@ class Operations extends BaseController
             'total_transfer_fee' => $totalTransferFee,
             'total_commission' => $totalCommission,
             'total_withdraw_fee' => $totalWithdrawFee,
-            'total_debit' => $totalDebit
+            'total_debit' => $totalDebit,
+            'csrf_hash' => csrf_hash()
         ]);
     }
 

@@ -6,7 +6,7 @@
 
     <div class="form__logo">
         <div class="form__logo-icon">M</div>
-        <span class="form__logo-name"><?= esc(getenv('app.name') ?: 'MonApp') ?></span>
+        <span class="form__logo-name"><?= esc(getenv('app.name') ?: 'Blue Monay') ?></span>
     </div>
 
     <h1 class="form__title">Créer un compte</h1>

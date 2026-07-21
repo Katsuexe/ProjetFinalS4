@@ -158,23 +158,47 @@ class MainSeeder extends Seeder
         $this->db->table('users')->insertBatch($users);
 
         // ── 6. Soldes pour les users avec wallet.view ────────────────
+        // ⚠️ On n'écrit JAMAIS directement dans user_balances : ce serait un
+        // solde fantôme, sans ligne dans le grand livre (`transactions`),
+        // ce qui casse l'invariant "user_balances.balance n'est qu'un cache
+        // du grand livre" (voir TransactionModel::computeBalanceForUser).
+        // À la place, on enregistre un vrai dépôt initial dans le ledger,
+        // puis on dérive le solde depuis ce ledger — exactement comme le
+        // ferait MobileMoneyService::deposit() en production.
         $aliceId = $this->db->table('users')->where('phone', '0331234567')->get()->getRowArray()['id'];
         $bobId = $this->db->table('users')->where('phone', '0341234567')->get()->getRowArray()['id'];
-        
-        $balances = [
+
+        $openingDeposits = [
             [
-                'id_user'    => $aliceId,
-                'balance'    => 150000.00,
-                'currency'   => 'Ar',
-                'updated_at' => $now,
+                'user_id'           => $aliceId,
+                'recipient_id'      => null,
+                'operation_type_id' => $opTypes['deposit'],
+                'amount'            => 150000.00,
+                'fee_amount'        => 0,
+                'created_at'        => $now,
             ],
             [
-                'id_user'    => $bobId,
-                'balance'    => 50000.00,
+                'user_id'           => $bobId,
+                'recipient_id'      => null,
+                'operation_type_id' => $opTypes['deposit'],
+                'amount'            => 50000.00,
+                'fee_amount'        => 0,
+                'created_at'        => $now,
+            ],
+        ];
+        $this->db->table('transactions')->insertBatch($openingDeposits);
+
+        // Le solde stocké est maintenant DÉRIVÉ du ledger qu'on vient de
+        // remplir, comme le ferait UserBalanceModel::recomputeFromLedger().
+        $transactionModel = new \App\Models\TransactionModel();
+        $balanceModel      = new \App\Models\UserBalanceModel();
+        foreach ([$aliceId, $bobId] as $uid) {
+            $balanceModel->insert([
+                'id_user'    => $uid,
+                'balance'    => $transactionModel->computeBalanceForUser((int) $uid),
                 'currency'   => 'Ar',
                 'updated_at' => $now,
-            ]
-        ];
-        $this->db->table('user_balances')->insertBatch($balances);
+            ]);
+        }
     }
 }

@@ -77,7 +77,7 @@
                         <option value="<?= $op['id'] ?>"><?= esc($op['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
-                <label for="operation_type_id" class="form__label" style="transform:translateY(-1.6rem) scale(.82);color:var(--primary);">Type d'opération</label>
+                <label for="operation_type_id" class="form__label" style="transform:translateY(-1.6rem) scale(.82);color:var(--first-color);">Type d'opération</label>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
                 <div class="form__div">

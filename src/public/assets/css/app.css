@@ -1,27 +1,88 @@
 /* ===== GOOGLE FONTS ===== */
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap");
+
+/* =============================================================
+   REFONTE UX — Direction "Soft Sky" (Blue Monay)
+   Charte verrouillée :
+   - Palette : #F0F9FF (fond), #FFFFFF (surfaces), #E0E7FF (bordures),
+     #3B82F6 (primary / bleu), #A5B4FC (accent lavande), #1E293B (texte).
+   - Typo : Sora (titres, 500-700), Manrope (corps, 400-600).
+   - Layout : dashboard dense (topbar + sidebar + grille de panneaux).
+
+   La structure des composants (auth, dashboard, cards, tables,
+   badges, boutons, forms) est IDENTIQUE : seuls les tokens et les
+   surfaces changent. Aucun nom de classe supprimé.
+   ============================================================= */
 
 /* ===== VARIABLES ===== */
 :root {
-  --first-color:  #3b82f6; /* Bleu vibrant */
-  --first-color-light: #60a5fa;
-  --first-color-dark: #2563eb;
-  --danger-color: #ef4444;
-  --success-color:#10b981;
-  --input-color:  #64748b;
-  --border-color: rgba(226, 232, 240, 0.8);
-  --bg-color:     #f8fafc;
-  --text-dark:    #0f172a;
-  --text-muted:   #64748b;
-  --card-shadow:  0 10px 40px -10px rgba(0,0,0,0.08);
-  --card-glass:   rgba(255, 255, 255, 0.7);
-  --card-backdrop: blur(16px);
-  --warning-color:#f59e0b;
-  --body-font:    "Outfit", "Inter", "Roboto", sans-serif;
+  /* --- Palette de marque (bleu clair + lavande) --- */
+  --first-color:       #3B82F6;
+  --first-color-light: #60A5FA;
+  --first-color-dark:  #2563EB;
+  --accent-color:      #A5B4FC;   /* lavande */
+  --danger-color:      #EF4444;
+  --success-color:     #10B981;
+  --warning-color:     #F59E0B;
+
+  /* --- Surfaces & texte (light) --- */
+  --bg-color:      #F0F9FF;  /* fond de page — sky-50 */
+  --surface-1:     #FFFFFF;  /* sidebar, topbar */
+  --surface-2:     #FFFFFF;  /* cards, panneaux */
+  --surface-3:     #EFF6FF;  /* hover de rangée / input */
+  --border-color:  #E0E7FF;  /* bordures lavande claires */
+  --border-strong: #C7D2FE;
+
+  --text-dark:   #1E293B;    /* texte principal */
+  --text-muted:  #64748B;    /* texte secondaire */
+  --input-color: #94A3B8;    /* placeholder, icônes secondaires */
+
+  /* --- Ombres & effets --- */
+  --card-shadow:  0 8px 24px -14px rgba(30, 41, 59, 0.18),
+                  0 1px 0 0 rgba(255, 255, 255, 0.6) inset;
+  --card-glass:   var(--surface-2);
+  --card-backdrop: none;
+  --focus-ring:   0 0 0 3px rgba(59, 130, 246, .25);
+
+  /* --- Couleurs sémantiques (light-adapted) --- */
+  --info-fg:     #1D4ED8;
+  --info-bg:     #DBEAFE;
+  --success-fg:  #047857;
+  --success-bg:  #D1FAE5;
+  --danger-fg:   #B91C1C;
+  --danger-bg:   #FEE2E2;
+  --warning-fg:  #B45309;
+  --warning-bg:  #FEF3C7;
+  --neutral-fg:  #475569;
+  --neutral-bg:  #F1F5F9;
+  --violet-fg:   #6D28D9;
+  --violet-bg:   #EDE9FE;
+
+  /* --- États d'interaction --- */
+  --state-hover-bg:  #EFF6FF;
+  --state-active-bg: #DBEAFE;
+
+  /* --- Rayons --- */
+  --radius-sm:   .5rem;
+  --radius-md:   .75rem;
+  --radius-lg:   1rem;
+  --radius-xl:   1.5rem;
+  --radius-pill: 999px;
+
+  /* --- Thème opérations --- */
+  --op-deposit-color:  var(--success-color);
+  --op-withdraw-color: var(--warning-color);
+  --op-transfer-color: var(--first-color);
+  --op-multiple-color: var(--violet-fg);
+
+  /* --- Typo --- */
+  --heading-font:     "Sora", "Manrope", system-ui, sans-serif;
+  --body-font:        "Manrope", "Sora", system-ui, sans-serif;
   --normal-font-size: 1rem;
   --small-font-size:  .875rem;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition:       all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 
 /* ===== BASE ===== */
 *, ::before, ::after { box-sizing: border-box; }
@@ -37,6 +98,14 @@ body {
 }
 
 h1,h2,h3 { margin: 0; font-weight: 600; }
+
+/* Filet de sécurité "glassmorphism" : si backdrop-filter n'est pas
+   supporté par le navigateur, les cartes passent en fond blanc opaque
+   plutôt que de rester semi-transparentes sans flou (ce qui laisserait
+   voir "brut" tout ce qu'il y a derrière la fenêtre). */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .l-form, .stat-card, .card { background: #fff; }
+}
 a { color: var(--first-color); text-decoration: none; transition: var(--transition); }
 a:hover { color: var(--first-color-dark); text-decoration: none; }
 
@@ -54,7 +123,7 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   width: 100%;
   max-width: 400px;
   padding: 2.5rem 2.5rem;
-  border-radius: 1.5rem;
+  border-radius: var(--radius-xl);
   background: var(--card-glass);
   backdrop-filter: var(--card-backdrop);
   -webkit-backdrop-filter: var(--card-backdrop);
@@ -120,7 +189,7 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   font-size: var(--normal-font-size);
   font-family: var(--body-font);
   border: 2px solid var(--border-color);
-  border-radius: .5rem;
+  border-radius: var(--radius-sm);
   outline: none;
   padding: 1rem;
   background: none;
@@ -175,7 +244,7 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   font-family: var(--body-font);
   font-size: var(--normal-font-size);
   font-weight: 500;
-  border-radius: .5rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: box-shadow .2s, background .2s;
   margin-top: .5rem;
@@ -187,7 +256,7 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   color: var(--first-color);
   border: 2px solid var(--border-color);
 }
-.form__button--ghost:hover { background: #f0f6fe; box-shadow: none; }
+.form__button--ghost:hover { background: var(--state-hover-bg); box-shadow: none; }
 
 /* ===== DIVIDER ===== */
 .form__divider {
@@ -208,16 +277,16 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
 /* ===== ALERT ===== */
 .alert {
   padding: .75rem 1rem;
-  border-radius: .5rem;
+  border-radius: var(--radius-sm);
   font-size: var(--small-font-size);
   margin-bottom: 1.25rem;
   display: flex;
   align-items: flex-start;
   gap: .5rem;
 }
-.alert--error   { background: #fce8e6; color: #c5221f; border-left: 3px solid var(--danger-color); }
-.alert--success { background: #e6f4ea; color: #137333; border-left: 3px solid var(--success-color); }
-.alert--info    { background: #e8f0fe; color: #1a56bb; border-left: 3px solid var(--first-color); }
+.alert--error   { background: var(--danger-bg);  color: var(--danger-fg);  border-left: 3px solid var(--danger-color); }
+.alert--success { background: var(--success-bg); color: var(--success-fg); border-left: 3px solid var(--success-color); }
+.alert--info    { background: var(--info-bg);     color: var(--info-fg);   border-left: 3px solid var(--first-color); }
 
 /* ===== FOOTER LINK ===== */
 .form__footer {
@@ -286,9 +355,9 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   border-radius: 0;
   text-decoration: none;
 }
-.sidebar__link:hover { background: #f0f6fe; color: var(--first-color); text-decoration: none; }
+.sidebar__link:hover { background: var(--state-hover-bg); color: var(--first-color); text-decoration: none; }
 .sidebar__link.active {
-  background: #e8f0fe;
+  background: var(--state-active-bg);
   color: var(--first-color);
   font-weight: 500;
   border-right: 3px solid var(--first-color);
@@ -318,22 +387,25 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
 .sidebar__user-info { flex: 1; overflow: hidden; }
 .sidebar__user-name { font-weight: 500; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar__user-role { color: var(--input-color); font-size: .7rem; }
-.sidebar__logout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Bouton icône seule, de taille fixe, plaqué à droite de la ligne
-     grâce à flex-shrink:0 (ne se laisse pas écraser par sidebar__user-info
-     qui a flex:1 et prend tout l'espace disponible restant). */
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
+
+/* Bouton pour réduire/étendre la sidebar (desktop uniquement — sur mobile
+   la sidebar est déjà un panneau plein qu'on ouvre/ferme, le collapse n'a
+   pas de sens en plus de ça). */
+.sidebar__collapse-btn {
+  display: none;
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
   color: var(--text-muted);
+  padding: .3rem;
   border-radius: .35rem;
-  transition: background .15s, color .15s;
+  line-height: 0;
+  flex-shrink: 0;
+  transition: background .15s, color .15s, transform .2s;
 }
-.sidebar__logout svg { width: 16px; height: 16px; flex-shrink: 0; }
-.sidebar__logout:hover { background: #fce8e6; color: var(--danger-color); text-decoration: none; }
+.sidebar__collapse-btn svg { width: 16px; height: 16px; }
+.sidebar__collapse-btn:hover { background: var(--neutral-bg); color: var(--text-dark); }
 
 /* Mobile overlay */
 .sidebar-overlay {
@@ -357,7 +429,7 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   line-height: 0;
 }
 .sidebar__close-btn svg { width: 18px; height: 18px; }
-.sidebar__close-btn:hover { background: #f1f3f4; color: var(--text-dark); }
+.sidebar__close-btn:hover { background: var(--neutral-bg); color: var(--text-dark); }
 
 /* Main */
 .main {
@@ -365,6 +437,7 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   margin-left: 240px;
   display: flex;
   flex-direction: column;
+  transition: margin-left .25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .topbar {
   height: 60px;
@@ -394,20 +467,115 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   flex-shrink: 0;
 }
 .topbar__burger svg { width: 22px; height: 22px; }
-.topbar__burger:hover { background: #f1f3f4; color: var(--text-dark); }
+.topbar__burger:hover { background: var(--neutral-bg); color: var(--text-dark); }
 
-/* Lien déconnexion dans la topbar */
-.topbar__logout-link {
-  display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px;
-  border-radius: .35rem;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  line-height: 0;
-  transition: background .15s, color .15s;
+/* ── Menu déroulant du compte (topbar) : point unique de déconnexion,
+   remplace l'ancien duo icône-topbar + icône-sidebar redondant. ── */
+.account-menu { position: relative; }
+.account-menu__trigger {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: .3rem .6rem .3rem .3rem;
+  border-radius: var(--radius-pill);
+  color: var(--text-dark);
+  transition: background .15s, border-color .15s;
 }
-.topbar__logout-link svg { width: 18px; height: 18px; }
-.topbar__logout-link:hover { background: #fce8e6; color: var(--danger-color); text-decoration: none; }
+.account-menu__trigger:hover,
+.account-menu__trigger[aria-expanded="true"] { background: var(--neutral-bg); }
+.account-menu__avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--first-color);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 500; font-size: .8rem;
+  flex-shrink: 0;
+}
+.account-menu__name {
+  font-size: .85rem;
+  font-weight: 500;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-menu__chevron { width: 14px; height: 14px; color: var(--text-muted); transition: transform .15s; flex-shrink: 0; }
+.account-menu__trigger[aria-expanded="true"] .account-menu__chevron { transform: rotate(180deg); }
+
+.account-menu__dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + .5rem);
+  right: 0;
+  min-width: 210px;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  padding: .5rem;
+  z-index: 60;
+}
+.account-menu__dropdown.is-open { display: block; }
+.account-menu__header {
+  padding: .4rem .6rem .75rem;
+  margin-bottom: .35rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .4rem;
+}
+.account-menu__fullname {
+  font-weight: 500;
+  color: var(--text-dark);
+  font-size: .9rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-menu__item {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .6rem;
+  border-radius: .4rem;
+  color: var(--text-muted);
+  font-size: .85rem;
+  transition: background .15s, color .15s;
+  text-decoration: none;
+}
+.account-menu__item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.account-menu__item:hover { background: var(--state-hover-bg); color: var(--first-color); text-decoration: none; }
+.account-menu__item--danger:hover { background: var(--danger-bg); color: var(--danger-color); }
+
+@media (max-width: 767px) {
+  .account-menu__name { display: none; }
+}
+
+/* ── Sidebar réduite (desktop) ── */
+@media (min-width: 768px) {
+  .sidebar__collapse-btn { display: flex; align-items: center; justify-content: center; }
+  .sidebar { transition: width .25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+  .app.sidebar-collapsed .sidebar { width: 76px; }
+  .app.sidebar-collapsed .main { margin-left: 76px; }
+  .app.sidebar-collapsed .sidebar__brand { justify-content: center; padding: 1.25rem .5rem; gap: 0; }
+  .app.sidebar-collapsed .sidebar__brand > span,
+  .app.sidebar-collapsed .sidebar__group-label,
+  .app.sidebar-collapsed .sidebar__link-label,
+  .app.sidebar-collapsed .sidebar__user-info {
+    display: none;
+  }
+  .app.sidebar-collapsed .sidebar__collapse-btn { margin-left: 0; transform: rotate(180deg); }
+  .app.sidebar-collapsed .sidebar__link { justify-content: center; padding: .7rem; }
+  .app.sidebar-collapsed .sidebar__link.active { border-right: none; box-shadow: inset 3px 0 0 var(--first-color); }
+  .app.sidebar-collapsed .sidebar__user { justify-content: center; }
+}
 
 /* ===== RESPONSIVE MOBILE (< 768px) ===== */
 @media (max-width: 767px) {
@@ -427,21 +595,42 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   .page-content { padding: 1rem; }
   .stats-grid { grid-template-columns: 1fr; gap: 1.25rem; }
   .card__body { padding: 1rem; }
+
+  /* Le collapse est une fonctionnalité desktop : sous 768px on ignore
+     toujours la classe sidebar-collapsed (qui peut être restée en mémoire
+     depuis un dernier affichage desktop via localStorage). */
+  .app.sidebar-collapsed .sidebar { width: 240px; }
+  .app.sidebar-collapsed .main { margin-left: 0; }
+  .app.sidebar-collapsed .sidebar__brand > span,
+  .app.sidebar-collapsed .sidebar__group-label,
+  .app.sidebar-collapsed .sidebar__link-label,
+  .app.sidebar-collapsed .sidebar__user-info {
+    display: block;
+  }
+  .app.sidebar-collapsed .sidebar__link { justify-content: flex-start; padding: .65rem 1.5rem; }
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   padding: .2rem .6rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: .7rem;
   font-weight: 500;
 }
-.badge--blue    { background: #e8f0fe; color: #1a56bb; }
-.badge--green   { background: #e6f4ea; color: #137333; }
-.badge--red     { background: #fce8e6; color: #c5221f; }
-.badge--gray    { background: #f1f3f4; color: #5f6368; }
-.badge--amber   { background: #fef3e2; color: #a15c00; }
+.badge--blue    { background: var(--info-bg);    color: var(--info-fg); }
+.badge--green   { background: var(--success-bg); color: var(--success-fg); }
+.badge--red     { background: var(--danger-bg);  color: var(--danger-fg); }
+.badge--gray    { background: var(--neutral-bg); color: var(--neutral-fg); }
+.badge--amber   { background: var(--warning-bg); color: var(--warning-fg); }
+/* Alias visuel de badge--amber : utilisé spécifiquement pour signaler un
+   transfert vers un opérateur externe (historique + aperçu JS), pour ne
+   plus dupliquer "background:#d97706" en style inline à 2 endroits. */
+.badge--orange  { background: var(--warning-bg); color: var(--warning-fg); }
+/* Même violet que --op-multiple-color (transfert groupé) : un badge
+   "transfert multiple" et le titre/bouton de la page se reconnaissent
+   au premier coup d'œil comme LE MÊME concept (loi de continuité). */
+.badge--violet  { background: var(--violet-bg);  color: var(--violet-fg); }
 
 .page-content { padding: 2rem; flex: 1; }
 .page-header { margin-bottom: 1.75rem; }
@@ -454,7 +643,7 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
 .stat-card {
   background: var(--card-glass);
   backdrop-filter: var(--card-backdrop);
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: var(--card-shadow);
@@ -469,19 +658,23 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
 }
 .stat-icon {
   width: 40px; height: 40px;
-  border-radius: .5rem;
+  border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.stat-icon--blue   { background: #e8f0fe; }
-.stat-icon--green  { background: #e6f4ea; }
-.stat-icon--amber  { background: #fef3e2; }
-.stat-icon--red    { background: #fce8e6; }
+.stat-icon--blue   { background: var(--info-bg); }
+.stat-icon--green  { background: var(--success-bg); }
+.stat-icon--amber  { background: var(--warning-bg); }
+.stat-icon--red    { background: var(--danger-bg); }
 .stat-icon svg { width: 20px; height: 20px; }
-.stat-icon--blue svg   { color: var(--first-color); stroke: var(--first-color); }
-.stat-icon--green svg  { color: var(--success-color); stroke: var(--success-color); }
-.stat-icon--amber svg  { color: #f29900; stroke: #f29900; }
-.stat-icon--red svg    { color: var(--danger-color); stroke: var(--danger-color); }
+.stat-icon--blue svg   { color: var(--info-fg); stroke: var(--info-fg); }
+.stat-icon--green svg  { color: var(--success-fg); stroke: var(--success-fg); }
+/* Avant : #f29900, une 3e teinte d'ambre différente à la fois du thème
+   retrait (--warning-color: #f59e0b) et du texte badge (--warning-fg:
+   #a15c00) — la même "alerte" avait 3 visages différents dans l'appli.
+   Elle rejoint maintenant --warning-fg, exactement comme badge--amber. */
+.stat-icon--amber svg  { color: var(--warning-fg); stroke: var(--warning-fg); }
+.stat-icon--red svg    { color: var(--danger-fg); stroke: var(--danger-fg); }
 
 .stat-body__label { font-size: .75rem; color: var(--text-muted); margin-bottom: .25rem; }
 .stat-body__value { font-size: 1.4rem; font-weight: 500; color: var(--text-dark); }
@@ -491,7 +684,7 @@ a:hover { color: var(--first-color-dark); text-decoration: none; }
   background: var(--card-glass);
   backdrop-filter: var(--card-backdrop);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
   overflow: hidden;
   margin-bottom: 2rem;
@@ -515,7 +708,7 @@ tbody tr:hover { background: #f8f9fa; }
 .btn {
   display: inline-flex; align-items: center; gap: .35rem;
   padding: .45rem .9rem;
-  border-radius: .4rem;
+  border-radius: var(--radius-sm);
   font-size: .8rem;
   font-weight: 500;
   cursor: pointer;
@@ -527,9 +720,9 @@ tbody tr:hover { background: #f8f9fa; }
 .btn--primary  { background: var(--first-color); color: #fff; }
 .btn--primary:hover { background: #1557b0; color: #fff; text-decoration: none; box-shadow: 0 2px 10px rgba(26,115,232,.3); }
 .btn--outline  { background: none; color: var(--first-color); border: 1px solid var(--border-color); }
-.btn--outline:hover { background: #f0f6fe; color: var(--first-color); text-decoration: none; }
+.btn--outline:hover { background: var(--state-hover-bg); color: var(--first-color); text-decoration: none; }
 .btn--danger   { background: none; color: var(--danger-color); border: 1px solid var(--border-color); }
-.btn--danger:hover  { background: #fce8e6; color: var(--danger-color); text-decoration: none; }
+.btn--danger:hover  { background: var(--danger-bg); color: var(--danger-fg); text-decoration: none; }
 .btn--sm { padding: .3rem .65rem; font-size: .75rem; }
 
 /* ===== FORM GROUP (formulaires simples dans une .card admin/user) =====
@@ -567,7 +760,7 @@ tbody tr:hover { background: #f8f9fa; }
   color: var(--text-dark);
   padding: .6rem .75rem;
   border: 1px solid var(--border-color);
-  border-radius: .4rem;
+  border-radius: var(--radius-sm);
   background: #fff;
   outline: none;
   transition: border-color .15s, box-shadow .15s;
@@ -609,8 +802,8 @@ tbody tr:hover { background: #f8f9fa; }
 
 .form-card__icon {
   width: 40px; height: 40px;
-  border-radius: .6rem;
-  background: #e8f0fe;
+  border-radius: var(--radius-md);
+  background: var(--info-bg);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -647,11 +840,11 @@ tbody tr:hover { background: #f8f9fa; }
   gap: .5rem;
   padding: .55rem .7rem;
   border: 1px solid var(--border-color);
-  border-radius: .4rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: border-color .15s, background .15s;
 }
-.perm-check:hover { border-color: var(--first-color); background: #f8faff; }
+.perm-check:hover { border-color: var(--first-color); background: var(--state-hover-bg); }
 .perm-check input[type="checkbox"] { margin-top: .2rem; flex-shrink: 0; accent-color: var(--first-color); }
 .perm-check__name { display: block; font-size: .8rem; color: var(--text-dark); font-weight: 500; }
 .perm-check__slug { display: block; font-size: .7rem; color: var(--text-muted); font-family: monospace; margin-top: .1rem; }
@@ -659,7 +852,7 @@ tbody tr:hover { background: #f8f9fa; }
    au lieu de se fondre dans les 12 autres cases identiques du perm-grid. */
 .perm-check:has(input:checked) {
   border-color: var(--first-color);
-  background: #f0f6fe;
+  background: var(--state-active-bg);
   box-shadow: 0 0 0 1px var(--first-color) inset;
 }
 .perm-check:has(input:checked) .perm-check__name { color: var(--first-color); }
@@ -673,73 +866,12 @@ tbody tr:hover { background: #f8f9fa; }
 .perm-grid__count { font-size: .75rem; color: var(--text-muted); }
 .perm-grid__count strong { color: var(--first-color); font-weight: 500; }
 
-/* ===== MODAL (dialog générique — utilisé par admin/calendar) ===== */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(32,33,36,.55);
-  display: none;
-  align-items: center; justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-.modal-overlay.is-open { display: flex; }
-.modal {
-  background: #fff;
-  border-radius: .75rem;
-  box-shadow: var(--card-shadow);
-  width: 100%; max-width: 440px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-.modal__header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-.modal__title { font-weight: 500; font-size: 1rem; color: var(--text-dark); }
-.modal__close {
-  width: 28px; height: 28px; border: none; background: none; cursor: pointer;
-  color: var(--text-muted); border-radius: .35rem;
-  display: flex; align-items: center; justify-content: center;
-}
-.modal__close svg { width: 18px; height: 18px; }
-.modal__close:hover { background: #f1f3f4; color: var(--text-dark); }
-.modal__body { padding: 1.5rem; }
-.modal__footer { display: flex; gap: .6rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); background: var(--bg-color); }
-
-/* ===== CALENDRIER (admin/calendar — exemple FullCalendar) =====
-   PEDAGOGIE : FullCalendar apporte son propre CSS (classes .fc-*). Plutôt
-   que de le laisser avec sa palette par défaut (bleu FullCalendar ≠ bleu de
-   l'app), on réhabille juste ce qu'il faut pour qu'il se fonde dans
-   DESIGN.md — même logique que .btn--primary ailleurs dans ce fichier. */
-.calendar-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: .75rem;
-  margin-bottom: 1.25rem;
-}
-.color-swatches { display: flex; gap: .5rem; }
-.color-swatch {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  padding: 0;
-}
-.color-swatch.is-selected { border-color: var(--text-dark); box-shadow: 0 0 0 2px #fff inset; }
-
-.fc { font-family: var(--body-font); }
-.fc .fc-toolbar-title { font-size: 1.05rem; font-weight: 500; color: var(--text-dark); }
-.fc .fc-button-primary {
-  background: var(--first-color); border-color: var(--first-color);
-  text-transform: capitalize; box-shadow: none !important;
-}
-.fc .fc-button-primary:hover { background: #1557b0; border-color: #1557b0; }
-.fc .fc-button-primary:disabled { background: #9db8e8; border-color: #9db8e8; }
-.fc .fc-button-primary:not(:disabled).fc-button-active { background: #1557b0; border-color: #1557b0; }
-.fc-daygrid-day.fc-day-today { background: #f0f6fe !important; }
-.fc-event { cursor: pointer; border: none; }
-.fc-theme-standard td, .fc-theme-standard th { border-color: var(--border-color); }
-.fc-theme-standard .fc-scrollgrid { border-color: var(--border-color); }
+/* NOTE : la section "MODAL générique" et "CALENDRIER FullCalendar" qui
+   existait ici a été retirée — aucune vue du projet (admin/calendar,
+   .modal-overlay...) ne les utilise. Code mort supprimé plutôt que
+   maintenu "au cas où". Si un vrai calendrier ou une vraie modale sont
+   ajoutés plus tard, réintroduire ce CSS à ce moment-là, avec la vue qui
+   va avec. */
 
 /* ===== AVATAR / PHOTO DE PROFIL =====
    PEDAGOGIE : un seul jeu de règles réutilisé à 3 endroits — la sidebar
@@ -770,3 +902,694 @@ tbody tr:hover { background: #f8f9fa; }
 /* Le <input type="file"> réel est masqué ; son <label> fait office de
    bouton stylé (pattern standard pour un file input custom en CSS pur). */
 .avatar-card__file-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+
+/* ===== THÈME PAR TYPE D'OPÉRATION (user/operations/formulaire.php) =====
+   Remplace les styles inline "color: <?= $themeColor ?>" et couleurs codées
+   en dur dans la vue : un seul point de vérité par type d'opération, qui
+   réutilise les couleurs déjà définies dans :root au lieu d'en inventer de
+   nouvelles à chaque vue. */
+.op-title--depot               { color: var(--op-deposit-color); }
+.op-title--retrait             { color: var(--op-withdraw-color); }
+.op-title--transfert           { color: var(--op-transfer-color); }
+.op-title--transfert_multiple  { color: var(--op-multiple-color); }
+
+.op-submit--depot              { background: var(--op-deposit-color);  border-color: var(--op-deposit-color); }
+.op-submit--retrait            { background: var(--op-withdraw-color); border-color: var(--op-withdraw-color); }
+.op-submit--transfert          { background: var(--op-transfer-color); border-color: var(--op-transfer-color); }
+.op-submit--transfert_multiple { background: var(--op-multiple-color); border-color: var(--op-multiple-color); }
+
+/* ===== ÉCRAN DE SÉLECTION (user/operations/actions.php) =====
+   Avant : 4 dégradés colorés en permanence, en style inline, sans lien
+   avec les couleurs utilisées ailleurs pour ces mêmes opérations (dashboard,
+   titre/bouton du formulaire). Ici : blanc par défaut (figure-fond claire,
+   cohérente avec le fond de la carte), et c'est SEULEMENT au survol / tap
+   que la couleur de l'opération apparaît en dégradé — l'animation devient
+   elle-même le signal "ceci va réagir", plutôt qu'une couleur figée.
+   Chaque variante ne fait que poser --op-color = le même token que le
+   dashboard et le formulaire : les 4 boutons partagent une seule forme et
+   une seule mécanique d'animation (loi de similarité), seule la couleur
+   change — et cette couleur est la même du premier clic jusqu'à la page
+   d'opération (loi de continuité). */
+.action-btn {
+  --op-color: var(--first-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+  padding: 1.5rem 1rem;
+  border: 2px solid var(--op-color);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  color: var(--op-color);
+  font-family: var(--body-font);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--card-shadow);
+  transition: background .25s ease, color .2s ease, border-color .25s ease,
+              transform .2s ease, box-shadow .25s ease;
+  -webkit-tap-highlight-color: transparent; /* évite le flash gris par défaut sur mobile */
+}
+.action-btn svg { width: 32px; height: 32px; }
+
+/* :hover pour le bureau, :focus-visible pour le clavier, .is-active pour
+   le tap mobile (posée en JS car :active seul est peu fiable sur les <a>
+   dans Safari iOS). Les trois déclenchent EXACTEMENT la même animation. */
+.action-btn:hover,
+.action-btn:focus-visible,
+.action-btn.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: var(--op-color);
+  background: linear-gradient(135deg, var(--op-color), color-mix(in srgb, var(--op-color) 65%, #000));
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px -10px rgba(0,0,0,.35);
+  box-shadow: 0 14px 28px -10px color-mix(in srgb, var(--op-color) 55%, transparent);
+}
+.action-btn:active { transform: translateY(-1px); }
+
+.action-btn--depot              { --op-color: var(--op-deposit-color); }
+.action-btn--retrait            { --op-color: var(--op-withdraw-color); }
+.action-btn--transfert          { --op-color: var(--op-transfer-color); }
+.action-btn--transfert_multiple { --op-color: var(--op-multiple-color); }
+
+/* ===== APERÇU / REÇU (aperçu live avant validation d'une opération) =====
+   PEDAGOGIE : ce composant était reconstruit 3 fois en JS (retrait,
+   transfert, transfert groupé), avec les mêmes styles inline répétés à
+   chaque ligne de tableau. Un seul jeu de classes ici, un seul générateur
+   JS (buildBreakdownCard) dans formulaire.php : une source de vérité pour
+   le visuel, plus facile à faire évoluer que 3 copies quasi identiques. */
+.receipt-breakdown {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.receipt-breakdown__title {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: .5rem;
+}
+.receipt-breakdown__table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.receipt-breakdown__table td { padding: .4rem 0; }
+.receipt-breakdown__label { color: var(--text-muted); }
+.receipt-breakdown__value { text-align: right; font-weight: 500; }
+.receipt-breakdown__value--warning { color: var(--warning-color); }
+.receipt-breakdown__value--success { color: var(--success-color); }
+.receipt-breakdown__row--total td { border-top: 1px dashed #cbd5e1; padding-top: .6rem; }
+.receipt-breakdown__label--total { color: var(--text-dark); font-weight: 600; }
+.receipt-breakdown__value--total { font-weight: 700; color: var(--danger-color); font-size: 1.05rem; }
+/* Ligne "montant reçu par le destinataire" : n'apparaît que dans l'aperçu
+   TRANSFERT (voir formulaire.php, buildBreakdownCard). Avant : un indigo
+   isolé (#e0e7ff/#4338ca) sans rapport avec la couleur de la page — le
+   surlignage semblait "flotter" hors du thème. Il reprend maintenant
+   --op-transfer-color, en tinté clair pour rester lisible (loi de
+   continuité : le surlignage prolonge visuellement le titre de la page,
+   au lieu d'introduire une 3e couleur non identifiée). */
+.receipt-breakdown__row--highlight td { background: #e0e7ff; background: color-mix(in srgb, var(--op-transfer-color) 12%, #fff); padding: .6rem .5rem; }
+.receipt-breakdown__row--highlight .receipt-breakdown__label,
+.receipt-breakdown__row--highlight .receipt-breakdown__value { color: var(--op-transfer-color); font-weight: 600; }
+
+/* ===== TUILES D'ACTION RAPIDE (user/dashboard.php) =====
+   Remplace les 5 blocs de style inline quasi identiques (fond, bordure,
+   icône ronde, hover en JS) par un seul jeu de classes + un modificateur
+   de couleur, cohérent avec le reste du design system (.badge--*, .btn--*). */
+.quick-action {
+  display: flex; flex-direction: column; align-items: center; gap: .6rem;
+  padding: 1.25rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid transparent;
+  text-decoration: none;
+  transition: background .2s ease;
+}
+.quick-action:hover { text-decoration: none; }
+.quick-action__icon {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.quick-action__icon svg { width: 24px; }
+.quick-action__label { font-weight: 600; font-size: .9rem; }
+.quick-action__hint { font-size: .75rem; }
+
+.quick-action--green   { background: #f0fdf4; border-color: #bbf7d0; }
+.quick-action--green:hover  { background: #dcfce7; }
+.quick-action--green .quick-action__icon { background: var(--op-deposit-color); }
+.quick-action--green .quick-action__label { color: #166534; }
+.quick-action--green .quick-action__hint  { color: #4ade80; }
+
+.quick-action--amber   { background: #fff7ed; border-color: #fed7aa; }
+.quick-action--amber:hover  { background: #ffedd5; }
+.quick-action--amber .quick-action__icon { background: var(--op-withdraw-color); }
+.quick-action--amber .quick-action__label { color: #9a3412; }
+.quick-action--amber .quick-action__hint  { color: #fb923c; }
+
+.quick-action--blue    { background: #eff6ff; border-color: #bfdbfe; }
+.quick-action--blue:hover   { background: #dbeafe; }
+.quick-action--blue .quick-action__icon  { background: var(--op-transfer-color); }
+.quick-action--blue .quick-action__label { color: #1d4ed8; }
+.quick-action--blue .quick-action__hint  { color: #60a5fa; }
+
+/* Tuile "transfert multiple" : reprend exactement --op-multiple-color
+   (donc --violet-fg), au lieu d'un violet voisin mais différent (#c026d3).
+   Avant, cliquer sur cette tuile amenait sur une page dont le titre et le
+   bouton étaient d'un AUTRE violet — la continuité visuelle entre le point
+   de départ (dashboard) et le point d'arrivée (formulaire) était rompue. */
+.quick-action--purple   { background: var(--violet-bg); border-color: #f5d0fe; }
+.quick-action--purple:hover { background: #fae8ff; }
+.quick-action--purple .quick-action__icon { background: var(--op-multiple-color); }
+.quick-action--purple .quick-action__label { color: var(--op-multiple-color); }
+.quick-action--purple .quick-action__hint  { color: #d946ef; }
+
+.quick-action--violet   { background: #faf5ff; border-color: #e9d5ff; }
+.quick-action--violet:hover { background: #f3e8ff; }
+.quick-action--violet .quick-action__icon { background: #a855f7; }
+.quick-action--violet .quick-action__label { color: #6b21a8; }
+.quick-action--violet .quick-action__hint  { color: #c084fc; }
+/* =============================================================
+   ===== SURFACE OVERRIDES — DIRECTION MIDNIGHT INDIGO =====
+   Ce bloc réécrit uniquement les surfaces (fonds, bordures, hover,
+   couleurs de texte contextuelles) au-dessus des règles précédentes.
+   Aucune classe supprimée : la structure des composants est intacte.
+   ============================================================= */
+
+/* --- Body & typo --- */
+body {
+  background: var(--bg-color);
+  background-image:
+    radial-gradient(1200px 600px at 100% -10%, rgba(165, 180, 252, .35), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(59, 130, 246, .18), transparent 60%);
+  background-attachment: fixed;
+  color: var(--text-dark);
+  font-family: var(--body-font);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+h1, h2, h3, h4, h5,
+.form__title, .card__title, .page-header h2,
+.sidebar__brand, .stat-body__value,
+.topbar__title, .form-card__header-text {
+  font-family: var(--heading-font);
+  letter-spacing: -0.01em;
+}
+
+a { color: var(--first-color); }
+a:hover { color: var(--first-color-dark); }
+
+/* --- Auth (floating label) --- */
+.form {
+  background: var(--surface-2);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow),
+              0 0 0 1px rgba(79, 70, 229, .05);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.form:hover { transform: none; }
+
+.form__input {
+  background: var(--surface-1);
+  border-color: var(--border-color);
+  color: var(--text-dark);
+}
+.form__input:focus { border-color: var(--first-color); box-shadow: var(--focus-ring); }
+.form__label {
+  background: var(--surface-2);
+  color: var(--input-color);
+}
+.form__logo-icon,
+.sidebar__brand-icon {
+  background: linear-gradient(135deg, var(--first-color), var(--first-color-light));
+  box-shadow: 0 4px 12px rgba(79, 70, 229, .4);
+}
+
+.form__button {
+  background: linear-gradient(135deg, var(--first-color), var(--first-color-dark));
+  box-shadow: 0 6px 20px -6px rgba(79, 70, 229, .6);
+}
+.form__button:hover {
+  background: linear-gradient(135deg, var(--first-color-light), var(--first-color));
+  box-shadow: 0 10px 24px -6px rgba(79, 70, 229, .7);
+}
+.form__button--ghost {
+  background: transparent;
+  color: var(--first-color-light);
+  border: 1px solid var(--border-strong);
+}
+.form__button--ghost:hover { background: var(--state-hover-bg); }
+
+.form__divider::before,
+.form__divider::after { background: var(--border-color); }
+
+/* --- Alertes (translucides sur fond sombre) --- */
+.alert--error   { background: var(--danger-bg);  color: var(--danger-fg);  border-left-color: var(--danger-color); }
+.alert--success { background: var(--success-bg); color: var(--success-fg); border-left-color: var(--success-color); }
+.alert--info    { background: var(--info-bg);    color: var(--info-fg);    border-left-color: var(--first-color); }
+
+/* --- Sidebar --- */
+.sidebar {
+  background: var(--surface-1);
+  border-right: 1px solid var(--border-color);
+}
+.sidebar__brand,
+.sidebar__footer { border-color: var(--border-color); }
+.sidebar__group-label { color: var(--input-color); }
+.sidebar__link { color: var(--text-muted); }
+.sidebar__link:hover {
+  background: var(--state-hover-bg);
+  color: var(--text-dark);
+}
+.sidebar__link.active {
+  background: var(--state-active-bg);
+  color: var(--first-color-dark);
+  border-right: 3px solid var(--first-color);
+  box-shadow: inset 2px 0 0 var(--first-color);
+}
+.sidebar__avatar,
+.account-menu__avatar {
+  background: linear-gradient(135deg, var(--first-color), var(--first-color-light));
+}
+.sidebar__user-name { color: var(--text-dark); }
+
+.sidebar__collapse-btn,
+.sidebar__close-btn,
+.topbar__burger { color: var(--text-muted); }
+.sidebar__collapse-btn:hover,
+.sidebar__close-btn:hover,
+.topbar__burger:hover { background: var(--surface-3); color: var(--text-dark); }
+
+/* --- Topbar --- */
+.topbar {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+}
+.topbar__title { color: var(--text-dark); }
+
+.account-menu__trigger { color: var(--text-dark); }
+.account-menu__trigger:hover,
+.account-menu__trigger[aria-expanded="true"] { background: var(--surface-3); }
+.account-menu__dropdown {
+  background: var(--surface-2);
+  border-color: var(--border-color);
+  box-shadow: var(--card-shadow);
+}
+.account-menu__header { border-color: var(--border-color); }
+.account-menu__fullname { color: var(--text-dark); }
+.account-menu__item { color: var(--text-muted); }
+.account-menu__item:hover { background: var(--state-hover-bg); color: var(--text-dark); }
+.account-menu__item--danger:hover { background: var(--danger-bg); color: var(--danger-fg); }
+
+.sidebar-overlay { background: rgba(30, 41, 59, .45); backdrop-filter: blur(4px); }
+
+/* --- Cards, stats, tables --- */
+.card,
+.stat-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.card__header { border-bottom: 1px solid var(--border-color); }
+.card__title,
+.stat-body__value { color: var(--text-dark); }
+.stat-body__label { color: var(--text-muted); }
+
+.stat-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: 0 12px 32px -12px rgba(79, 70, 229, .35);
+}
+
+/* Tables — rangées zébrées légères + hover indigo */
+thead th {
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--state-hover-bg);
+}
+tbody td {
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--border-color);
+}
+tbody tr:hover { background: var(--state-hover-bg); }
+
+/* --- Boutons --- */
+.btn--primary {
+  background: linear-gradient(135deg, var(--first-color), var(--first-color-dark));
+  color: #fff;
+  box-shadow: 0 4px 12px -4px rgba(79, 70, 229, .5);
+}
+.btn--primary:hover {
+  background: linear-gradient(135deg, var(--first-color-light), var(--first-color));
+  box-shadow: 0 8px 18px -4px rgba(79, 70, 229, .6);
+}
+.btn--outline {
+  color: var(--first-color-dark);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+}
+.btn--outline:hover {
+  background: var(--state-hover-bg);
+  color: var(--first-color-dark);
+  border-color: var(--first-color);
+}
+.btn--danger {
+  color: var(--danger-fg);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+}
+.btn--danger:hover {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  border-color: var(--danger-color);
+}
+
+/* --- Formulaires internes (form-group) --- */
+.form-group label { color: var(--text-dark); }
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group input[type="file"],
+.form-group select,
+.form-group textarea {
+  background: var(--surface-1);
+  border: 1px solid var(--border-color);
+  color: var(--text-dark);
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--first-color);
+  box-shadow: var(--focus-ring);
+}
+.form-group input::placeholder,
+.form-group textarea::placeholder { color: var(--input-color); }
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+  background: var(--neutral-bg);
+  color: var(--text-muted);
+}
+.form-group small,
+.form-group .form-hint { color: var(--text-muted); }
+
+/* select dropdown : forcer un rendu lisible sur navigateurs Chromium */
+.form-group select option { background: var(--surface-1); color: var(--text-dark); }
+
+/* --- Page --- */
+.page-header h2 { color: var(--text-dark); }
+.page-header p  { color: var(--text-muted); }
+
+/* --- Scrollbar (WebKit) — discrète, ton indigo --- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-color); }
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg-color);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* --- Sélection texte --- */
+::selection { background: rgba(59, 130, 246, .25); color: var(--text-dark); }
+
+/* --- Perm-check / quick-action / action-btn : fond sombre --- */
+.perm-check,
+.quick-action,
+.action-btn,
+.card--form,
+.avatar-card__body {
+  background: var(--surface-2);
+  border-color: var(--border-color);
+  color: var(--text-dark);
+}
+.perm-check:hover,
+.quick-action:hover,
+.action-btn:hover { background: var(--surface-3); border-color: var(--border-strong); }
+
+/* --- Modal overlay --- */
+.modal-overlay { background: rgba(30, 41, 59, .5); backdrop-filter: blur(6px); }
+
+/* --- Sidebar collapsed active bar : ton clair pour rester lisible --- */
+@media (min-width: 768px) {
+  .app.sidebar-collapsed .sidebar__link.active {
+    box-shadow: inset 3px 0 0 var(--first-color-light);
+  }
+}
+
+/* --- Fallback : si backdrop-filter absent, garder surfaces sombres opaques --- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .l-form, .stat-card, .card, .form { background: var(--surface-2); }
+}
+
+/* =============================================================
+   ============    RESPONSIVE MOBILE COMPLET    ================
+   Breakpoints :
+     - ≤ 1024px : tablette (grilles serrées, sidebar collapsable)
+     - ≤ 767px  : mobile (sidebar off-canvas, empilage vertical)
+     - ≤ 480px  : petit mobile (typo + espacements resserrés)
+   Toutes les cibles tactiles ≥ 44px. Pas de scroll horizontal.
+   ============================================================= */
+
+/* Base : éviter les débordements horizontaux */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, video, canvas { max-width: 100%; height: auto; }
+
+/* ── Tablette (≤ 1024px) ─────────────────────────────────── */
+@media (max-width: 1024px) {
+  .page-content { padding: 1.5rem; }
+  .stats-grid   { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .875rem; }
+  .perm-grid    { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .card__body   { padding: 1.25rem; }
+  .topbar       { padding: 0 1rem; }
+}
+
+/* ── Mobile (≤ 767px) ───────────────────────────────────── */
+@media (max-width: 767px) {
+  /* — Typo & rythme — */
+  html { font-size: 15px; }
+  .page-header { margin-bottom: 1rem; }
+  .page-header h2 { font-size: 1.125rem; }
+  .page-header p  { font-size: .8rem; }
+
+  /* — App shell — */
+  .app  { flex-direction: column; }
+  .main { margin-left: 0; width: 100%; min-width: 0; }
+
+  /* — Sidebar off-canvas plein-hauteur — */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(86vw, 320px);
+    height: 100vh;
+    height: 100dvh;
+    transform: translateX(-100%);
+    transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+    box-shadow: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: env(safe-area-inset-top);
+  }
+  .sidebar.is-open { transform: translateX(0); box-shadow: 6px 0 32px rgba(30,41,59,.22); }
+  .sidebar__close-btn { display: flex; align-items: center; }
+  .sidebar__collapse-btn { display: none !important; }
+  .sidebar__link { padding: .85rem 1.25rem; font-size: .95rem; }
+  .sidebar__brand { padding: 1rem 1.25rem; }
+  .sidebar__footer { padding: 1rem 1.25rem; }
+
+  /* Neutraliser une éventuelle classe "collapsed" laissée depuis le desktop */
+  .app.sidebar-collapsed .sidebar { width: min(86vw, 320px); }
+  .app.sidebar-collapsed .main { margin-left: 0; }
+  .app.sidebar-collapsed .sidebar__brand > span,
+  .app.sidebar-collapsed .sidebar__group-label,
+  .app.sidebar-collapsed .sidebar__link-label,
+  .app.sidebar-collapsed .sidebar__user-info { display: block; }
+  .app.sidebar-collapsed .sidebar__link { justify-content: flex-start; padding: .85rem 1.25rem; }
+
+  /* — Topbar sticky, compacte — */
+  .topbar {
+    height: 56px;
+    padding: 0 .875rem;
+    gap: .5rem;
+    padding-top: env(safe-area-inset-top);
+    height: calc(56px + env(safe-area-inset-top));
+  }
+  .topbar__burger { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+  .topbar__title  { font-size: .95rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar__right  { gap: .35rem; }
+
+  /* — Menu compte : masquer le nom, garder l'avatar tapable — */
+  .account-menu__name    { display: none; }
+  .account-menu__chevron { display: none; }
+  .account-menu__trigger { padding: .25rem; gap: 0; min-width: 40px; min-height: 40px; justify-content: center; }
+  .account-menu__dropdown {
+    position: fixed;
+    top: auto;
+    right: .5rem;
+    left: .5rem;
+    bottom: auto;
+    width: auto;
+    min-width: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  /* — Contenu page — */
+  .page-content { padding: 1rem .875rem calc(1rem + env(safe-area-inset-bottom)); }
+
+  /* — Grilles : 1 colonne — */
+  .stats-grid   { grid-template-columns: 1fr; gap: .75rem; margin-bottom: 1.25rem; }
+  .perm-grid    { grid-template-columns: 1fr; gap: .5rem; }
+  .avatar-card__actions { flex-direction: column; align-items: stretch; }
+  .avatar-card__actions .btn { width: 100%; justify-content: center; }
+
+  /* — Cards / stats compactes — */
+  .card__header { padding: .875rem 1rem; }
+  .card__body   { padding: 1rem; }
+  .card--form   { max-width: 100%; }
+  .stat-card    { padding: 1rem; gap: .75rem; }
+  .stat-icon    { width: 40px; height: 40px; }
+  .stat-body__value { font-size: 1.2rem; }
+
+  /* — Formulaires : inputs plus grands (44px), pas de zoom iOS — */
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="password"],
+  .form-group input[type="number"],
+  .form-group input[type="file"],
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px;              /* évite le zoom auto sur iOS */
+    padding: .75rem .875rem;
+    min-height: 44px;
+  }
+  .form__input {
+    font-size: 16px;
+    padding: .95rem .875rem .55rem;
+    min-height: 48px;
+  }
+  .form__label { left: .875rem; }
+
+  /* — Boutons : cibles ≥ 44px — */
+  .btn, .form__button, .form__button--ghost {
+    min-height: 44px;
+    padding: .6rem 1rem;
+    font-size: .9rem;
+  }
+  .btn--sm { min-height: 36px; }
+
+  /* — Actions de formulaire empilées — */
+  .form-actions {
+    flex-direction: column-reverse;   /* action principale en bas = pouce */
+    align-items: stretch;
+    gap: .5rem;
+  }
+  .form-actions .btn,
+  .form-actions .form__button { width: 100%; justify-content: center; }
+
+  /* — Quick actions / action-btns : grille dense 2 colonnes — */
+  .quick-action,
+  .action-btn {
+    padding: 1rem;
+    min-height: 96px;
+  }
+  .action-btn svg { width: 28px; height: 28px; }
+
+  /* — Auth : la carte prend toute la largeur — */
+  .l-form {
+    padding: 1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+    min-height: 100vh;
+    min-height: 100dvh;
+    align-items: flex-start;
+  }
+  .form {
+    padding: 1.5rem 1.25rem;
+    max-width: 100%;
+    width: 100%;
+    border-radius: var(--radius-lg);
+  }
+  .form__title    { font-size: 1.35rem; }
+  .form__subtitle { font-size: .85rem; }
+
+  /* — Alerts — */
+  .alert { padding: .75rem .875rem; font-size: .85rem; }
+
+  /* — Modal plein écran mobile — */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal,
+  .modal-content,
+  .modal-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    margin: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* — Tables : scroll horizontal fluide si présentes — */
+  .table-responsive,
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table       { min-width: 100%; font-size: .85rem; }
+  table th, table td { padding: .6rem .5rem; white-space: nowrap; }
+
+  /* — Receipt breakdown : plus lisible — */
+  .receipt-breakdown { padding: 1rem; }
+  .receipt-breakdown__table { font-size: .82rem; }
+
+  /* — Scrollbar plus fine — */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+}
+
+/* ── Petit mobile (≤ 480px) ─────────────────────────────── */
+@media (max-width: 480px) {
+  html { font-size: 14.5px; }
+  .page-content { padding: .875rem .75rem calc(.875rem + env(safe-area-inset-bottom)); }
+  .topbar { padding: 0 .75rem; }
+  .stat-body__value { font-size: 1.1rem; }
+  .form { padding: 1.25rem 1rem; }
+  .form__title { font-size: 1.2rem; }
+  .card__body, .card__header { padding: .875rem; }
+  .quick-action, .action-btn { min-height: 88px; padding: .875rem; }
+  .badge { font-size: .68rem; padding: .18rem .5rem; }
+}
+
+/* ── Paysage mobile bas (≤ 500px de haut) : sidebar scrollable ─ */
+@media (max-height: 500px) and (max-width: 900px) {
+  .sidebar { padding-bottom: 1rem; }
+  .l-form  { align-items: flex-start; padding-top: 1rem; }
+}
+
+/* ── Accessibilité : réduire les animations si demandé ─────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Tactile : supprimer le highlight bleu iOS, améliorer tap ─ */
+@media (hover: none) and (pointer: coarse) {
+  a, button, .btn, .sidebar__link, .action-btn, .quick-action,
+  .account-menu__trigger, .account-menu__item {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Sur tactile, remplacer les :hover par les états actifs */
+  .btn:hover,
+  .sidebar__link:hover,
+  .action-btn:hover,
+  .quick-action:hover,
+  .card:hover,
+  .stat-card:hover { transform: none; }
+}

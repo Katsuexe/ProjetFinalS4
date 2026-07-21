@@ -82,5 +82,54 @@ class TransactionModel extends Model
 
         return ['internal' => $internal, 'external' => $external];
     }
+
+    /**
+     * Recalcule le solde EXACT d'un utilisateur à partir du grand livre
+     * (table `transactions`), au lieu de faire confiance à un compteur
+     * incrémenté/décrémenté au fil des opérations.
+     *
+     * C'est la SOURCE DE VÉRITÉ : `user_balances.balance` n'est qu'un cache
+     * de ce résultat, jamais l'inverse. Si le cache et ce calcul divergent,
+     * c'est le cache qui a tort.
+     *
+     * Règles (cf. FeeCalculatorService / MobileMoneyService) :
+     *   - dépôt (deposit)          : + amount
+     *   - retrait (withdraw)       : - amount - fee_amount
+     *   - transfert envoyé         : - amount - fee_amount - commission_amount
+     *   - transfert reçu (interne) : + amount (montant plein, décision 1A/4A)
+     */
+    public function computeBalanceForUser(int $userId): float
+    {
+        $db = $this->db;
+
+        $depositTypeId = $db->table('operation_types')->select('id')->where('slug', 'deposit')->get()->getRow('id');
+
+        $deposits = $db->table($this->table)
+            ->selectSum('amount', 'total_amount')
+            ->where('user_id', $userId)
+            ->where('operation_type_id', $depositTypeId)
+            ->get()->getRowArray();
+
+        $outflows = $db->table($this->table)
+            ->selectSum('amount', 'total_amount')
+            ->selectSum('fee_amount', 'total_fee')
+            ->selectSum('commission_amount', 'total_commission')
+            ->where('user_id', $userId)
+            ->where('operation_type_id !=', $depositTypeId)
+            ->get()->getRowArray();
+
+        $received = $db->table($this->table)
+            ->selectSum('amount', 'total_amount')
+            ->where('recipient_id', $userId)
+            ->get()->getRowArray();
+
+        $totalDeposits = (float) ($deposits['total_amount'] ?? 0);
+        $totalOutflows = (float) ($outflows['total_amount'] ?? 0)
+                       + (float) ($outflows['total_fee'] ?? 0)
+                       + (float) ($outflows['total_commission'] ?? 0);
+        $totalReceived = (float) ($received['total_amount'] ?? 0);
+
+        return round($totalDeposits - $totalOutflows + $totalReceived, 2);
+    }
 }
 

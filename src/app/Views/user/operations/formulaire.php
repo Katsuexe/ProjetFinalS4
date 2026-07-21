@@ -9,14 +9,11 @@
 <?php endif; ?>
 
 <?php
-// Définir la couleur du thème selon le type
-$colorMap = [
-    'depot' => '#059669',
-    'retrait' => '#d97706',
-    'transfert' => '#2563eb',
-    'transfert_multiple' => '#9333ea'
-];
-$themeColor = $colorMap[$type] ?? '#1e293b';
+// Classes de thème par type d'opération (voir .op-title--* / .op-submit--*
+// dans app.css) : plus de couleur hexadécimale codée en dur dans la vue.
+$themeClass = in_array($type, ['depot', 'retrait', 'transfert', 'transfert_multiple'], true)
+    ? $type
+    : null;
 
 $subtitles = [
     'depot' => '(Simulation : le dépôt est automatique et sans frais)',
@@ -29,8 +26,8 @@ $subtitles = [
 <div class="card card--form" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
     
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-        <h2 class="card__title" style="color: <?= $themeColor ?>; margin: 0;"><?= esc($title) ?></h2>
-        <a href="<?= base_url('user/operations/formulaire') ?>" class="btn btn--outline btn--sm" style="border-radius: 50px; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; text-decoration:none;">
+        <h2 class="card__title <?= $themeClass ? 'op-title--' . $themeClass : '' ?>" style="margin: 0;"><?= esc($title) ?></h2>
+        <a href="<?= base_url('user/operations/formulaire') ?>" class="btn btn--outline btn--sm" style="border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; text-decoration:none;">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Changer d'opération
         </a>
@@ -81,11 +78,8 @@ $subtitles = [
         <?php endif; ?>
 
         <?php if ($type === 'transfert_multiple'): ?>
-            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom: 1.5rem;">
-                <input type="checkbox" name="include_withdraw_fee_multiple" id="include_withdraw_fee_multiple" value="1" checked style="width:auto;">
-                <label for="include_withdraw_fee_multiple" style="margin:0; color:#475569; font-size:0.9rem; font-weight:500;">Inclure les frais de retrait</label>
-            </div>
-            
+            <p class="text-muted" style="margin-bottom:1rem; font-size:0.85rem;">La case « Frais retrait » se choisit individuellement pour chaque destinataire.</p>
+
             <div id="recipients-container">
                 <div class="recipient-row" style="display:flex; gap:0.5rem; margin-bottom: 1rem; align-items: flex-end;">
                     <div class="form-group" style="flex:2; margin-bottom: 0;">
@@ -95,6 +89,11 @@ $subtitles = [
                     <div class="form-group" style="flex:1; margin-bottom: 0;">
                         <label>Montant 1</label>
                         <input type="number" name="recipient_amounts[]" class="amount-input" required min="100" step="100">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; display:flex; flex-direction:column; align-items:center; gap:0.25rem;">
+                        <label style="font-size:0.7rem; white-space:nowrap; margin:0;">Frais retrait</label>
+                        <input type="checkbox" class="withdraw-fee-input" checked style="width:auto; height:20px;">
+                        <input type="hidden" name="recipient_include_withdraw_fees[]" class="withdraw-fee-hidden" value="1">
                     </div>
                     <button type="button" class="btn btn--outline remove-recipient" style="padding:0.5rem; height:42px;" disabled>
                         <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"/></svg>
@@ -107,11 +106,62 @@ $subtitles = [
             <div id="preview-multiple-transfer" style="display:none; margin-bottom: 1.5rem;"></div>
         <?php endif; ?>
 
-        <button type="submit" class="btn btn--primary" id="submit-btn" style="width: 100%; background: <?= $themeColor ?>; border-color: <?= $themeColor ?>; margin-top: 0.5rem;">
+        <button type="submit" class="btn btn--primary <?= $themeClass ? 'op-submit--' . $themeClass : '' ?>" id="submit-btn" style="width: 100%; margin-top: 0.5rem;">
             Valider l'opération
         </button>
     </form>
 </div>
+
+<script>
+// La protection CSRF est en mode "cookie" (voir Config\Security) et le
+// jeton est régénéré à chaque requête POST. Le <form> principal envoie
+// bien son jeton via csrf_field(), mais les 3 appels fetch() ci-dessous
+// n'en envoyaient aucun : le filtre `csrf`, actif globalement, rejetait
+// alors la requête AVANT le contrôleur, et le JSON attendu par formatAr()
+// était vide -> NaN affiché partout dans l'aperçu.
+// Le cookie CSRF est en HttpOnly (Config\Cookie::$httponly = true), donc
+// impossible à relire depuis document.cookie : le jeton doit être fourni
+// par PHP au chargement de la page, puis rafraîchi après CHAQUE appel
+// AJAX à partir du hash renvoyé par le contrôleur (côté serveur, le
+// filtre `csrf` régénère déjà ce hash avant même que le contrôleur ne
+// s'exécute, puisque regenerate = true).
+let csrfToken = '<?= esc(csrf_hash(), 'js') ?>';
+const CSRF_HEADER_NAME = '<?= esc(csrf_header(), 'js') ?>';
+
+function refreshCsrfToken(data) {
+    if (data && typeof data.csrf_hash === 'string') {
+        csrfToken = data.csrf_hash;
+    }
+}
+
+// Générateur partagé de la carte d'aperçu (utilisé par les 3 scripts
+// ci-dessous) : une seule fonction plutôt que 3 gabarits HTML dupliqués.
+function formatAr(n) {
+
+    return new Intl.NumberFormat('fr-FR').format(n) + ' Ar';
+}
+function buildBreakdownCard(title, rows, badgeHtml) {
+    badgeHtml = badgeHtml || '';
+    const rowsHtml = rows.map(function (r) {
+        if (r.total) {
+            return '<tr class="receipt-breakdown__row--total">' +
+                '<td class="receipt-breakdown__label--total">' + r.label + '</td>' +
+                '<td class="receipt-breakdown__value--total">' + formatAr(r.value) + '</td></tr>';
+        }
+        if (r.highlight) {
+            return '<tr class="receipt-breakdown__row--highlight">' +
+                '<td class="receipt-breakdown__label">' + r.label + '</td>' +
+                '<td class="receipt-breakdown__value">' + formatAr(r.value) + '</td></tr>';
+        }
+        const cls = r.cls ? ' receipt-breakdown__value--' + r.cls : '';
+        return '<tr><td class="receipt-breakdown__label">' + r.label + '</td>' +
+            '<td class="receipt-breakdown__value' + cls + '">' + formatAr(r.value) + '</td></tr>';
+    }).join('');
+    return '<div class="receipt-breakdown">' +
+        '<h4 class="receipt-breakdown__title">' + title + badgeHtml + '</h4>' +
+        '<table class="receipt-breakdown__table">' + rowsHtml + '</table></div>';
+}
+</script>
 
 <?php if ($type === 'retrait'): ?>
 <script>
@@ -131,29 +181,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch('<?= base_url('user/operations/preview-withdraw') ?>', {
                     method: 'POST',
                     body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        [CSRF_HEADER_NAME]: csrfToken
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {
-                    let html = `
-                    <div class="receipt-breakdown" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:1.25rem;">
-                        <h4 style="font-size:1rem; margin-bottom:1rem; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:0.5rem;">Aperçu du retrait</h4>
-                        <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-                            <tr>
-                                <td style="padding:0.4rem 0; color:#475569;">Montant demandé</td>
-                                <td style="padding:0.4rem 0; text-align:right; font-weight:500;">${new Intl.NumberFormat('fr-FR').format(data.amount)} Ar</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:0.4rem 0; color:#475569;">Frais de retrait</td>
-                                <td style="padding:0.4rem 0; text-align:right; font-weight:500; color:#d97706;">${new Intl.NumberFormat('fr-FR').format(data.fee)} Ar</td>
-                            </tr>
-                            <tr style="border-top:1px dashed #cbd5e1;">
-                                <td style="padding:0.6rem 0; color:#0f172a; font-weight:600;">Total débité de votre solde</td>
-                                <td style="padding:0.6rem 0; text-align:right; font-weight:700; color:#b91c1c; font-size:1.05rem;">${new Intl.NumberFormat('fr-FR').format(data.total_debit)} Ar</td>
-                            </tr>
-                        </table>
-                    </div>`;
-                    previewContainer.innerHTML = html;
+                    refreshCsrfToken(data);
+                    previewContainer.innerHTML = buildBreakdownCard('Aperçu du retrait', [
+                        { label: 'Montant demandé', value: data.amount },
+                        { label: 'Frais de retrait', value: data.fee, cls: 'warning' },
+                        { label: 'Total débité de votre solde', value: data.total_debit, total: true },
+                    ]);
                     previewContainer.style.display = 'block';
                 });
             }, 300);
@@ -194,60 +234,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch('<?= base_url('user/operations/preview-transfer') ?>', {
                     method: 'POST',
                     body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        [CSRF_HEADER_NAME]: csrfToken
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {
+                    refreshCsrfToken(data);
                     if (data.error) {
                         previewContainer.innerHTML = `<div class="alert alert--error">${data.error}</div>`;
                         previewContainer.style.display = 'block';
                         submitBtn.disabled = true;
                     } else {
-                        let html = `
-                        <div class="receipt-breakdown" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:1.25rem;">
-                            <h4 style="font-size:1rem; margin-bottom:1rem; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:0.5rem;">
-                                Aperçu de la transaction
-                                ${data.is_external ? '<span class="badge badge--orange" style="float:right; font-size:0.7rem; background:#d97706;">Vers opérateur externe</span>' : ''}
-                            </h4>
-                            <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-                                <tr>
-                                    <td style="padding:0.4rem 0; color:#475569;">Montant envoyé</td>
-                                    <td style="padding:0.4rem 0; text-align:right; font-weight:500;">${new Intl.NumberFormat('fr-FR').format(data.amount)} Ar</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:0.4rem 0; color:#475569;">Frais de transfert</td>
-                                    <td style="padding:0.4rem 0; text-align:right; font-weight:500;">${new Intl.NumberFormat('fr-FR').format(data.transfer_fee)} Ar</td>
-                                </tr>`;
-                                
+                        const rows = [
+                            { label: 'Montant envoyé', value: data.amount },
+                            { label: 'Frais de transfert', value: data.transfer_fee },
+                        ];
                         if (data.is_external && data.commission > 0) {
-                            html += `
-                                <tr>
-                                    <td style="padding:0.4rem 0; color:#475569;">Commission inter-opérateur</td>
-                                    <td style="padding:0.4rem 0; text-align:right; font-weight:500; color:#d97706;">${new Intl.NumberFormat('fr-FR').format(data.commission)} Ar</td>
-                                </tr>`;
+                            rows.push({ label: 'Commission inter-opérateur', value: data.commission, cls: 'warning' });
                         }
-                        
                         if (data.withdraw_fee_eq > 0) {
-                            html += `
-                                <tr>
-                                    <td style="padding:0.4rem 0; color:#475569;">Frais de retrait inclus</td>
-                                    <td style="padding:0.4rem 0; text-align:right; font-weight:500; color:#059669;">${new Intl.NumberFormat('fr-FR').format(data.withdraw_fee_eq)} Ar</td>
-                                </tr>`;
+                            rows.push({ label: 'Frais de retrait inclus', value: data.withdraw_fee_eq, cls: 'success' });
                         }
-                        
-                        html += `
-                                <tr style="border-top:1px dashed #cbd5e1;">
-                                    <td style="padding:0.6rem 0; color:#0f172a; font-weight:600;">Total débité</td>
-                                    <td style="padding:0.6rem 0; text-align:right; font-weight:700; color:#b91c1c; font-size:1.05rem;">${new Intl.NumberFormat('fr-FR').format(data.total_debit)} Ar</td>
-                                </tr>
-                                <tr style="background:#e0e7ff; border-radius:4px;">
-                                    <td style="padding:0.6rem 0.5rem; color:#4338ca; font-weight:600; border-radius:4px 0 0 4px;">Montant reçu par le destinataire</td>
-                                    <td style="padding:0.6rem 0.5rem; text-align:right; font-weight:700; color:#4338ca; border-radius:0 4px 4px 0;">${new Intl.NumberFormat('fr-FR').format(data.amount_received)} Ar</td>
-                                </tr>
-                            </table>
-                        </div>`;
-                        
-                        previewContainer.innerHTML = html;
+                        rows.push({ label: 'Total débité', value: data.total_debit, total: true });
+                        rows.push({ label: 'Montant reçu par le destinataire', value: data.amount_received, highlight: true });
+
+                        const badge = data.is_external
+                            ? '<span class="badge badge--orange" style="float:right;">Vers opérateur externe</span>'
+                            : '';
+                        previewContainer.innerHTML = buildBreakdownCard('Aperçu de la transaction', rows, badge);
                         previewContainer.style.display = 'block';
                         submitBtn.disabled = false;
                     }
@@ -273,7 +289,6 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('recipients-container');
     const btnAdd = document.getElementById('add-recipient');
-    const includeFeeCheck = document.getElementById('include_withdraw_fee_multiple');
     const previewContainer = document.getElementById('preview-multiple-transfer');
     const submitBtn = document.getElementById('submit-btn');
     let recipientCount = 1;
@@ -286,9 +301,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // La case visible ne fait que refléter/piloter l'input caché envoyé au
+    // serveur : un checkbox non coché n'est jamais soumis en POST, ce qui
+    // désalignerait le tableau avec recipient_phones[]/recipient_amounts[].
+    // L'input caché, lui, est toujours présent -> l'index reste fiable même
+    // si le destinataire n° 2 décoche sa case pendant qu'un autre reste coché.
+    function bindFeeCheckbox(row) {
+        const visible = row.querySelector('.withdraw-fee-input');
+        const hidden = row.querySelector('.withdraw-fee-hidden');
+        visible.addEventListener('change', function () {
+            hidden.value = visible.checked ? '1' : '0';
+            updatePreview();
+        });
+    }
+
     function updatePreview() {
         const phones = Array.from(document.querySelectorAll('.phone-input')).map(el => el.value);
         const amounts = Array.from(document.querySelectorAll('.amount-input')).map(el => el.value);
+        const fees = Array.from(document.querySelectorAll('.withdraw-fee-hidden')).map(el => el.value);
         
         let hasValidInput = false;
         const formData = new FormData();
@@ -299,9 +329,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             formData.append('phones[]', phones[i]);
             formData.append('amounts[]', amounts[i]);
+            formData.append('include_withdraw_fees[]', fees[i]);
         }
-        
-        formData.append('include_withdraw_fee', includeFeeCheck.checked ? '1' : '0');
 
         if (hasValidInput) {
             clearTimeout(timeoutId);
@@ -309,53 +338,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch('<?= base_url('user/operations/preview-multiple-transfer') ?>', {
                     method: 'POST',
                     body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        [CSRF_HEADER_NAME]: csrfToken
+                    }
                 })
                 .then(response => response.json())
                 .then(data => {
+                    refreshCsrfToken(data);
                     if (data.error) {
                         previewContainer.innerHTML = `<div class="alert alert--error">${data.error}</div>`;
                         previewContainer.style.display = 'block';
                         submitBtn.disabled = true;
                     } else {
-                        let html = `
-                        <div class="receipt-breakdown" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:1.25rem;">
-                            <h4 style="font-size:1rem; margin-bottom:1rem; color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:0.5rem;">Aperçu global de l'envoi groupé</h4>
-                            <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
-                                <tr>
-                                    <td style="padding:0.4rem 0; color:#475569;">Montant total envoyé</td>
-                                    <td style="padding:0.4rem 0; text-align:right; font-weight:500;">${new Intl.NumberFormat('fr-FR').format(data.total_amount)} Ar</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:0.4rem 0; color:#475569;">Frais de transfert cumulés</td>
-                                    <td style="padding:0.4rem 0; text-align:right; font-weight:500;">${new Intl.NumberFormat('fr-FR').format(data.total_transfer_fee)} Ar</td>
-                                </tr>`;
-                                
+                        const rows = [
+                            { label: 'Montant total envoyé', value: data.total_amount },
+                            { label: 'Frais de transfert cumulés', value: data.total_transfer_fee },
+                        ];
                         if (data.total_commission > 0) {
-                            html += `
-                                <tr>
-                                    <td style="padding:0.4rem 0; color:#475569;">Commissions inter-opérateurs</td>
-                                    <td style="padding:0.4rem 0; text-align:right; font-weight:500; color:#d97706;">${new Intl.NumberFormat('fr-FR').format(data.total_commission)} Ar</td>
-                                </tr>`;
+                            rows.push({ label: 'Commissions inter-opérateurs', value: data.total_commission, cls: 'warning' });
                         }
-                        
                         if (data.total_withdraw_fee > 0) {
-                            html += `
-                                <tr>
-                                    <td style="padding:0.4rem 0; color:#475569;">Frais de retrait cumulés</td>
-                                    <td style="padding:0.4rem 0; text-align:right; font-weight:500; color:#059669;">${new Intl.NumberFormat('fr-FR').format(data.total_withdraw_fee)} Ar</td>
-                                </tr>`;
+                            rows.push({ label: 'Frais de retrait cumulés', value: data.total_withdraw_fee, cls: 'success' });
                         }
-                        
-                        html += `
-                                <tr style="border-top:1px dashed #cbd5e1;">
-                                    <td style="padding:0.6rem 0; color:#0f172a; font-weight:600;">Total débité de votre solde</td>
-                                    <td style="padding:0.6rem 0; text-align:right; font-weight:700; color:#b91c1c; font-size:1.05rem;">${new Intl.NumberFormat('fr-FR').format(data.total_debit)} Ar</td>
-                                </tr>
-                            </table>
-                        </div>`;
-                        
-                        previewContainer.innerHTML = html;
+                        rows.push({ label: 'Total débité de votre solde', value: data.total_debit, total: true });
+
+                        previewContainer.innerHTML = buildBreakdownCard("Aperçu global de l'envoi groupé", rows);
                         previewContainer.style.display = 'block';
                         submitBtn.disabled = false;
                     }
@@ -382,6 +390,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label>Montant ${recipientCount}</label>
                     <input type="number" name="recipient_amounts[]" class="amount-input" required min="100" step="100">
                 </div>
+                <div class="form-group" style="margin-bottom: 0; display:flex; flex-direction:column; align-items:center; gap:0.25rem;">
+                    <label style="font-size:0.7rem; white-space:nowrap; margin:0;">Frais retrait</label>
+                    <input type="checkbox" class="withdraw-fee-input" checked style="width:auto; height:20px;">
+                    <input type="hidden" name="recipient_include_withdraw_fees[]" class="withdraw-fee-hidden" value="1">
+                </div>
                 <button type="button" class="btn btn--outline remove-recipient" style="padding:0.5rem; height:42px;">
                     <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"/></svg>
                 </button>
@@ -392,6 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add listeners to new inputs
             row.querySelector('.phone-input').addEventListener('input', updatePreview);
             row.querySelector('.amount-input').addEventListener('input', updatePreview);
+            bindFeeCheckbox(row);
         });
     }
 
@@ -415,9 +429,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initial listeners
         document.querySelectorAll('.phone-input').forEach(el => el.addEventListener('input', updatePreview));
         document.querySelectorAll('.amount-input').forEach(el => el.addEventListener('input', updatePreview));
+        document.querySelectorAll('.recipient-row').forEach(bindFeeCheckbox);
     }
-    
-    if (includeFeeCheck) includeFeeCheck.addEventListener('change', updatePreview);
 });
 </script>
 <?php endif; ?>

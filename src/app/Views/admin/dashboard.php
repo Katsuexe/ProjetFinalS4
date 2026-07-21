@@ -80,7 +80,7 @@
                 <td><?= esc($u['id']) ?></td>
                 <td>
                     <div style="display:flex;align-items:center;gap:.5rem;">
-                        <div style="width:28px;height:28px;border-radius:50%;background:#e8f0fe;color:#1a56bb;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:500;flex-shrink:0;">
+                        <div style="width:28px;height:28px;border-radius:50%;background:var(--info-bg);color:var(--info-fg);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:500;flex-shrink:0;">
                             <?= strtoupper(substr($u['username'], 0, 1)) ?>
                         </div>
                         <?= esc($u['username']) ?>
@@ -132,7 +132,7 @@
                 <td><span class="badge badge--blue"><?= esc($g['op_name']) ?></span></td>
                 <td><?= esc($g['nb_tx']) ?></td>
                 <td><?= number_format($g['total_amount'], 2, ',', ' ') ?></td>
-                <td style="font-weight:700;color:var(--success);"><?= number_format($g['total_fees'], 2, ',', ' ') ?></td>
+                <td style="font-weight:700;color:var(--success-color);"><?= number_format($g['total_fees'], 2, ',', ' ') ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -166,7 +166,7 @@
                     <td><?= esc($c['id']) ?></td>
                     <td>
                         <div style="display:flex;align-items:center;gap:.5rem;">
-                            <div style="width:28px;height:28px;border-radius:50%;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;flex-shrink:0;">
+                            <div style="width:28px;height:28px;border-radius:50%;background:var(--success-bg);color:var(--success-fg);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;flex-shrink:0;">
                                 <?= strtoupper(substr($c['username'], 0, 1)) ?>
                             </div>
                             <?= esc($c['username']) ?>

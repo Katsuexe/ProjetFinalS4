@@ -48,12 +48,8 @@ class MobileMoneyService
                 throw new \Exception("Type d'opération 'deposit' introuvable.");
             }
 
-            // Mettre à jour le solde
-            $this->balanceModel->where('id_user', $userId)
-                               ->set('balance', 'balance + ' . $amount, false)
-                               ->update();
-
-            // Historique
+            // Historique d'abord : le solde est ensuite DÉRIVÉ de cette ligne,
+            // jamais l'inverse (voir UserBalanceModel::recomputeFromLedger).
             $this->transactionModel->insert([
                 'user_id'           => $userId,
                 'recipient_id'      => null,
@@ -62,6 +58,10 @@ class MobileMoneyService
                 'fee_amount'        => 0,
                 'created_at'        => date('Y-m-d H:i:s'),
             ]);
+
+            // Recalcul du solde à partir du grand livre (source de vérité),
+            // plutôt qu'un "balance + X" qui ne fait que déplacer un compteur.
+            $this->balanceModel->recomputeFromLedger($userId);
 
             $this->db->transComplete();
             return ['success' => true, 'message' => 'Dépôt effectué avec succès.'];
@@ -115,20 +115,17 @@ class MobileMoneyService
                 throw new \Exception('Solde insuffisant (incluant ' . $realFee . ' Ar de frais).');
             }
 
-            // Débiter le compte
-            $this->balanceModel->where('id_user', $userId)
-                               ->set('balance', 'balance - ' . $totalToDeduct, false)
-                               ->update();
-
-            // Historique
+            // Historique d'abord, solde recalculé ensuite depuis ce grand livre.
             $this->transactionModel->insert([
                 'user_id'           => $userId,
                 'recipient_id'      => null,
                 'operation_type_id' => $opTypeId,
                 'amount'            => $amount,
-                'fee_amount'        => $realFee, // On trace les frais réellement payés (ou le total ? TODO suggère realFee)
+                'fee_amount'        => $realFee, // Frais réellement payés, après consommation des crédits éventuels
                 'created_at'        => date('Y-m-d H:i:s'),
             ]);
+
+            $this->balanceModel->recomputeFromLedger($userId);
 
             $this->db->transComplete();
 
@@ -187,11 +184,6 @@ class MobileMoneyService
             throw new \RuntimeException('Solde insuffisant pour ce transfert.');
         }
 
-        // Débit expéditeur
-        $this->balanceModel->where('id_user', $sender['id'])
-                           ->set('balance', 'balance - ' . $breakdown['total_debit'], false)
-                           ->update();
-
         $opTypeId = $this->opTypeModel->getIdBySlug('transfer');
         $transactionId = null;
 
@@ -200,9 +192,6 @@ class MobileMoneyService
             if (!$recipient) {
                 throw new \RuntimeException('Opération impossible.');
             }
-            
-            // Si pas de solde existant pour le destinataire, adjustBalance le crée
-            $this->balanceModel->adjustBalance($recipient['id'], $breakdown['amount_received']);
 
             $transactionId = $this->transactionModel->insert([
                 'user_id'           => $sender['id'],
@@ -238,6 +227,14 @@ class MobileMoneyService
             ]);
         }
 
+        // Recalcul des soldes impliqués depuis le grand livre (jamais de
+        // +/- direct sur user_balances.balance) : expéditeur toujours, et
+        // destinataire interne s'il existe.
+        $this->balanceModel->recomputeFromLedger($sender['id']);
+        if ($resolution['type'] === 'internal') {
+            $this->balanceModel->recomputeFromLedger($recipient['id']);
+        }
+
         $this->db->transComplete();
         if ($this->db->transStatus() === false) {
             throw new \RuntimeException('Erreur lors du transfert.');
@@ -252,10 +249,12 @@ class MobileMoneyService
     }
 
     /**
-     * Envoi groupé dynamique : Chaque destinataire a son propre montant.
-     * $recipientsData : array of ['phone' => '...', 'amount' => float]
+     * Envoi groupé dynamique : Chaque destinataire a son propre montant ET
+     * son propre choix d'inclure ou non les frais de retrait équivalents
+     * (décision 4A appliquée individuellement, pas globalement).
+     * $recipientsData : array of ['phone' => '...', 'amount' => float, 'include_withdraw_fee' => bool]
      */
-    public function transferMultiple(string $senderPhone, array $recipientsData, bool $includeWithdrawFee = true): array
+    public function transferMultiple(string $senderPhone, array $recipientsData): array
     {
         if (empty($recipientsData)) {
             throw new \RuntimeException("Aucun destinataire sélectionné.");
@@ -268,7 +267,7 @@ class MobileMoneyService
             if (empty($data['phone']) || empty($data['amount'])) continue;
             
             // On réutilise la logique de transfert classique pour chaque ligne
-            $results[] = $this->transfer($senderPhone, $data['phone'], (float) $data['amount'], $includeWithdrawFee);
+            $results[] = $this->transfer($senderPhone, $data['phone'], (float) $data['amount'], (bool) ($data['include_withdraw_fee'] ?? true));
         }
 
         $this->db->transComplete();

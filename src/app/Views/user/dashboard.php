@@ -10,7 +10,7 @@
 <div class="stats-grid" style="margin-bottom:1.5rem;">
 
     <!-- Solde -->
-    <div class="stat-card" style="background:linear-gradient(135deg,#1a56db,#0f3ba8);color:#fff;border:none;">
+    <div class="stat-card" style="background:linear-gradient(135deg,var(--first-color),var(--first-color-dark));color:#fff;border:none;">
         <div class="stat-icon" style="background:rgba(255,255,255,.15);color:#fff;">
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3"/></svg>
         </div>
@@ -36,8 +36,13 @@
         </div>
         <div class="stat-body">
             <div class="stat-body__label">Mon numéro</div>
-            <div class="stat-body__value" style="font-size:1.1rem;letter-spacing:.05rem;">
-                <?= esc(session('phone') ?: '—') ?>
+            <div class="stat-body__value" style="font-size:1.1rem;letter-spacing:.05rem; display:flex; align-items:center; gap:0.5rem;">
+                <span id="phone-display"><?= esc(session('phone') ?: '—') ?></span>
+                <?php if (session('phone')): ?>
+                <button type="button" id="copy-phone" aria-label="Copier le numéro" title="Copier le numéro" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0;display:flex;align-items:center;">
+                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
+                </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -51,44 +56,44 @@
     </div>
     <div class="card__body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;padding:1.25rem;">
 
-        <a href="<?= base_url('user/operations/formulaire/depot') ?>" style="display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:1.25rem 1rem;border-radius:12px;background:#f0fdf4;border:2px solid #bbf7d0;text-decoration:none;transition:all .2s;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
-            <div style="width:48px;height:48px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;">
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:24px"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        <a href="<?= base_url('user/operations/formulaire/depot') ?>" class="quick-action quick-action--green">
+            <div class="quick-action__icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
             </div>
-            <span style="font-weight:600;color:#166534;font-size:.9rem;">Dépôt</span>
-            <span style="font-size:.75rem;color:#4ade80;">Sans frais</span>
+            <span class="quick-action__label">Dépôt</span>
+            <span class="quick-action__hint">Sans frais</span>
         </a>
 
-        <a href="<?= base_url('user/operations/formulaire/retrait') ?>" style="display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:1.25rem 1rem;border-radius:12px;background:#fff7ed;border:2px solid #fed7aa;text-decoration:none;transition:all .2s;" onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='#fff7ed'">
-            <div style="width:48px;height:48px;border-radius:50%;background:#f97316;color:#fff;display:flex;align-items:center;justify-content:center;">
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:24px"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"/></svg>
+        <a href="<?= base_url('user/operations/formulaire/retrait') ?>" class="quick-action quick-action--amber">
+            <div class="quick-action__icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15"/></svg>
             </div>
-            <span style="font-weight:600;color:#9a3412;font-size:.9rem;">Retrait</span>
-            <span style="font-size:.75rem;color:#fb923c;">Frais applicables</span>
+            <span class="quick-action__label">Retrait</span>
+            <span class="quick-action__hint">Frais applicables</span>
         </a>
 
-        <a href="<?= base_url('user/operations/formulaire/transfert') ?>" style="display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:1.25rem 1rem;border-radius:12px;background:#eff6ff;border:2px solid #bfdbfe;text-decoration:none;transition:all .2s;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
-            <div style="width:48px;height:48px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;">
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:24px"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+        <a href="<?= base_url('user/operations/formulaire/transfert') ?>" class="quick-action quick-action--blue">
+            <div class="quick-action__icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
             </div>
-            <span style="font-weight:600;color:#1d4ed8;font-size:.9rem;">Transfert</span>
-            <span style="font-size:.75rem;color:#60a5fa;">Frais applicables</span>
+            <span class="quick-action__label">Transfert</span>
+            <span class="quick-action__hint">Frais applicables</span>
         </a>
 
-        <a href="<?= base_url('user/operations/formulaire/transfert_multiple') ?>" style="display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:1.25rem 1rem;border-radius:12px;background:#fdf4ff;border:2px solid #f5d0fe;text-decoration:none;transition:all .2s;" onmouseover="this.style.background='#fae8ff'" onmouseout="this.style.background='#fdf4ff'">
-            <div style="width:48px;height:48px;border-radius:50%;background:#c026d3;color:#fff;display:flex;align-items:center;justify-content:center;">
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:24px"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
+        <a href="<?= base_url('user/operations/formulaire/transfert_multiple') ?>" class="quick-action quick-action--purple">
+            <div class="quick-action__icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
             </div>
-            <span style="font-weight:600;color:#86198f;font-size:.9rem;">Groupé</span>
-            <span style="font-size:.75rem;color:#d946ef;">Envoi multiple</span>
+            <span class="quick-action__label">Groupé</span>
+            <span class="quick-action__hint">Envoi multiple</span>
         </a>
 
-        <a href="<?= base_url('user/operations/history') ?>" style="display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:1.25rem 1rem;border-radius:12px;background:#faf5ff;border:2px solid #e9d5ff;text-decoration:none;transition:all .2s;" onmouseover="this.style.background='#f3e8ff'" onmouseout="this.style.background='#faf5ff'">
-            <div style="width:48px;height:48px;border-radius:50%;background:#a855f7;color:#fff;display:flex;align-items:center;justify-content:center;">
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:24px"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <a href="<?= base_url('user/operations/history') ?>" class="quick-action quick-action--violet">
+            <div class="quick-action__icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <span style="font-weight:600;color:#6b21a8;font-size:.9rem;">Historique</span>
-            <span style="font-size:.75rem;color:#c084fc;">Toutes les ops.</span>
+            <span class="quick-action__label">Historique</span>
+            <span class="quick-action__hint">Toutes les ops.</span>
         </a>
 
     </div>
@@ -146,6 +151,18 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 displayEl.textContent = '••••';
             }
+        });
+    }
+
+    const copyBtn = document.getElementById('copy-phone');
+    const phoneEl = document.getElementById('phone-display');
+    if (copyBtn && phoneEl) {
+        copyBtn.addEventListener('click', function () {
+            navigator.clipboard.writeText(phoneEl.textContent.trim()).then(function () {
+                const original = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:18px;height:18px;color:var(--success-color);"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>';
+                setTimeout(function () { copyBtn.innerHTML = original; }, 1500);
+            });
         });
     }
 });
