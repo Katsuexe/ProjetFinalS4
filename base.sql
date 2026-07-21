@@ -145,7 +145,7 @@ INSERT INTO `user_type_permissions` (`id_type`, `id_permission`) VALUES
 
 -- Utilisateurs (mot de passe pour admin/modo : "password123")
 INSERT INTO `users` (`id`, `username`, `phone`, `email`, `password`, `id_type`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'Admin', NULL, 'admin@example.com', '$2y$10$Q7eYlTfVv.oXNqY9F31L/OTlX4M8b1N3Fm/5q3.0fJk9/Y.E9G2eG', 1, 1, '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
+(1, 'Admin', NULL, '    ', '$2y$10$Q7eYlTfVv.oXNqY9F31L/OTlX4M8b1N3Fm/5q3.0fJk9/Y.E9G2eG', 1, 1, '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
 (2, 'Alice', '0331234567', NULL, NULL, 3, 1, '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
 (3, 'Bob', '0341234567', NULL, NULL, 3, 1, '2026-07-20 10:00:00', '2026-07-20 10:00:00'),
 (4, 'Modo', NULL, 'mod@example.com', '$2y$10$Q7eYlTfVv.oXNqY9F31L/OTlX4M8b1N3Fm/5q3.0fJk9/Y.E9G2eG', 2, 1, '2026-07-20 10:00:00', '2026-07-20 10:00:00');

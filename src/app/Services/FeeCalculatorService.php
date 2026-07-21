@@ -28,12 +28,15 @@ class FeeCalculatorService
      */
     public function resolveOperator(string $phone): array
     {
+        //get prefix
         $prefix = substr(preg_replace('/\D/', '', $phone), 0, 3);
-
+        
+        //prefix poiur même opérateur (self)
         if ($this->ownPrefixes->where('prefix', $prefix)->first()) {
             return ['type' => 'internal', 'external_operator_id' => null];
         }
 
+        // prefix pour opérateur externe 
         $externalPrefix = $this->externalPrefixes->where('prefix', $prefix)->first();
         if ($externalPrefix) {
             return ['type' => 'external', 'external_operator_id' => $externalPrefix['external_operator_id']];
@@ -42,17 +45,20 @@ class FeeCalculatorService
         return ['type' => 'unknown', 'external_operator_id' => null];
     }
 
+
+
     /** Frais barème par tranche (dépôt/retrait/transfert interne — adapté au vrai schéma DB) */
     public function scaleFee(int $operationTypeId, float $amount): float
     {
         return $this->feeScales->getApplicableFee($operationTypeId, $amount);
     }
 
+
     /**
      * Décision 2A : commission externe additive, décision 4A : frais de retrait "inclus" optionnel.
      * Retourne le détail complet pour affichage ET pour débit réel — même structure des 2 côtés.
      */
-    public function computeTransfer(float $amount, ?int $externalOperatorId, bool $includeWithdrawFee): array
+    public function computeTransfer(float $amount, ?int $externalOperatorId, bool $includeWithdrawFee, ?float $pourcentagepromo): array
     {
         $transferTypeId = 3; // id du type "transfert" dans operation_types
         $withdrawTypeId = 2; // id du type "retrait"

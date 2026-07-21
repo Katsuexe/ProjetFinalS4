@@ -136,10 +136,17 @@ class Operations extends BaseController
     // ─── APERCU TRANSFERT (AJAX) ────────────────────────────────────────────
     public function previewTransfer()
     {
+        //!! getpost sender phone
+
+        $senderPhone = $this->request->getPost('sender_phone');
         $recipientPhone = $this->request->getPost('recipient_phone');
         $amount = (float) $this->request->getPost('amount');
         $includeWithdrawFee = $this->request->getPost('include_withdraw_fee') === 'true' || $this->request->getPost('include_withdraw_fee') === '1';
         $forceOperatorId = $this->request->getPost('force_operator_id');
+
+        // if(isSameOperator($senderPhone,$recipientPhone)){
+        //    //!! ajouter promo
+        // }
 
         $calculator = new FeeCalculatorService();
         
